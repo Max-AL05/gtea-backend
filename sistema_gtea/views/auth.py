@@ -1,31 +1,31 @@
-from django.shortcuts import render
-from django.db.models import *
-from django.db import transaction
+from django.shortcuts import render # type: ignore
+from django.db.models import * # type: ignore
+from django.db import transaction # type: ignore
 from sistema_gtea.serializers import *
 from sistema_gtea.models import *
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication, TokenAuthentication
-from rest_framework.generics import CreateAPIView, DestroyAPIView, UpdateAPIView
-from rest_framework import permissions
-from rest_framework import generics
-from rest_framework import status
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-from rest_framework.reverse import reverse
-from rest_framework import viewsets
-from django.shortcuts import get_object_or_404
-from django.core import serializers
-from django.utils.html import strip_tags
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import Group
-from django.contrib.auth import get_user_model
-from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import rest_framework as filters
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication, TokenAuthentication # type: ignore
+from rest_framework.generics import CreateAPIView, DestroyAPIView, UpdateAPIView # type: ignore
+from rest_framework import permissions # type: ignore
+from rest_framework import generics # type: ignore
+from rest_framework import status # type: ignore
+from rest_framework.authtoken.views import ObtainAuthToken # type: ignore
+from rest_framework.authtoken.models import Token # type: ignore
+from rest_framework.response import Response # type: ignore
+from rest_framework.views import APIView # type: ignore
+from rest_framework.decorators import api_view # type: ignore
+from rest_framework.reverse import reverse # type: ignore
+from rest_framework import viewsets # type: ignore
+from django.shortcuts import get_object_or_404 # type: ignore
+from django.core import serializers # type: ignore
+from django.utils.html import strip_tags # type: ignore
+from django.contrib.auth import authenticate, login # type: ignore
+from django.contrib.auth.models import Group # type: ignore
+from django.contrib.auth import get_user_model # type: ignore
+from django_filters.rest_framework import DjangoFilterBackend # type: ignore
+from django_filters import rest_framework as filters # type: ignore
 from datetime import datetime
-from django.conf import settings
-from django.template.loader import render_to_string
+from django.conf import settings # type: ignore
+from django.template.loader import render_to_string # type: ignore
 import string
 import random
 

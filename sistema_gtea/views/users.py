@@ -27,10 +27,15 @@ from datetime import datetime
 from django.conf import settings # type: ignore
 from django.template.loader import render_to_string # type: ignore
 from django.contrib.auth.models import update_session_auth_hash # type: ignore
+from rest_framework import generics # type: ignore
+from rest_framework import permissions # type: ignore
+from rest_framework import status # type: ignore
+from django.contrib.auth.models import User # type: ignore
+from sistema_gtea.serializers import UserSerializer # type: ignore
 import string
 import random
 import json
-'''
+
 class AdminAll(generics.CreateAPIView):
     #Esta función es esencial para todo donde se requiera autorización de inicio de sesión (token)
     permission_classes = (permissions.IsAuthenticated,)
@@ -40,7 +45,116 @@ class AdminAll(generics.CreateAPIView):
         
         return Response(lista, 200)
 
-class AdminView(generics.CreateAPIView):
+#iniciar sesion
+class AdminView(generics.GenericAPIview):
+    permission_classes = [permissions.AllowAny]  
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get("correo_electronico")
+        password = request.data.get("contrasena")
+
+        user = authenticate(username=email, password=password)
+
+        if not user:
+            return Response({"error": "Correo o contraseña incorrectos"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Obtener o crear token
+        token, created = Token.objects.get_or_create(user=user)
+
+        user_data = UserSerializer(user).data
+
+        return Response({
+            "token": token.key,
+            "user": user_data,
+            "message": "Inicio de sesión exitoso"
+        }, status=status.HTTP_200_OK)
+
+#crear cuenta
+class RegistroView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        
+        if not request.data.get("acepta_terminos"):
+            return Response({"error": "Debes aceptar los términos y condiciones"}, status=status.HTTP_400_BAD_REQUEST)
+
+        first_name = request.data.get("nombre")
+        last_name = request.data.get("apellidos")
+        email = request.data.get("correo_institucional")
+        password = request.data.get("contraseña")
+        confirm_password = request.data.get("confirmar_contraseña")
+        rol = request.data.get("rol", "Administrador")  # Por defecto Admin
+
+        #validaciones
+        if password != confirm_password:
+            return Response({"error": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not email.endswith("@institucion.edu"):
+            return Response({"error": "El correo debe ser institucional (@institucion.edu)"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "Este correo ya está registrado"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Crear usuario en auth user
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password=password,
+            is_active=True
+        )
+
+        # Asignar rol
+        group, created = Group.objects.get_or_create(name=rol)
+        group.user_set.add(user)
+
+        # Crear perfil según rol
+        if rol == "Admin":
+            admin = Administradores.objects.create(
+                user=user,
+                clave_admin="",
+                telefono="",
+                rfc="",
+                edad=0,
+                ocupacion=""
+            )
+            admin.save()
+        elif rol == "Organizador":
+            organizador = Organizador.objects.create(
+                user=user,
+                clave_organizador="",
+                telefono="",
+                rfc="",
+                edad=0,
+                ocupacion=""
+            )
+            organizador.save()
+        elif rol == "Estudiante":
+            estudiante = Estudiantes.objects.create(
+                user=user,
+                clave_estudiante="",
+                telefono="",
+                rfc="",
+                edad=0,
+                ocupacion=""
+            )
+            estudiante.save()
+
+        token, created = Token.objects.get_or_create(user=user)
+
+        return Response({
+            "token": token.key,
+            "user": UserSerializer(user).data,
+            "message": "Cuenta creada exitosamente"
+        }, status=status.HTTP_201_CREATED)
+
+
+
+
+'''''
+class AdminView(generics.CreateAPIView): #obtener tablas
     #Obtener usuario por ID
     # permission_classes = (permissions.IsAuthenticated,)
     def get(self, request, *args, **kwargs):
@@ -55,7 +169,6 @@ class AdminView(generics.CreateAPIView):
 
         user = UserSerializer(data=request.data)
         if user.is_valid():
-            #frontend
             role = request.data['rol']
             first_name = request.data['first_name']
             last_name = request.data['last_name']
@@ -94,7 +207,8 @@ class AdminView(generics.CreateAPIView):
             return Response({"admin_created_id": admin.id }, 201)
 
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+'''''     
+'''''
 class AdminsViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     #Contar el total de cada tipo de usuarios
@@ -125,12 +239,10 @@ class AdminsViewEdit(generics.CreateAPIView):
     
     #Editar administrador
     def put(self, request, *args, **kwargs):
-        # iduser=request.data["id"]
         admin = get_object_or_404(Administradores, id=request.data["id"])
         admin.email = request.data["email"]
         admin.telefono = request.data["telefono"]
         admin.biografia = request.data["biografia"]
-        admin.edad = request.data["edad"]
         admin.save()
         temp = admin.user
         temp.first_name = request.data["first_name"]
@@ -141,6 +253,7 @@ class AdminsViewEdit(generics.CreateAPIView):
         return Response(user,200)
     
     #Eliminar administrador
+
     def delete(self, request, *args, **kwargs):
         admin = get_object_or_404(Administradores, id=request.GET.get("id"))
         try:
@@ -148,7 +261,8 @@ class AdminsViewEdit(generics.CreateAPIView):
             return Response({"details":"Administrador eliminado"},200)
         except Exception as e:
             return Response({"details":"Algo pasó al eliminar"},400)
-'''
+'''''
+'''''
 class AdminView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -166,8 +280,10 @@ class AdminView(generics.GenericAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+'''''
+'''''
 class AdminViewEdit(generics.GenericAPIView):
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -189,3 +305,4 @@ class AdminViewEdit(generics.GenericAPIView):
         update_session_auth_hash(request, user)  
 
         return Response({"message": "Contraseña actualizada correctamente"}, status=status.HTTP_200_OK)
+'''''

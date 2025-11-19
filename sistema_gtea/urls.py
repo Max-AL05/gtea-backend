@@ -25,30 +25,30 @@ urlpatterns = [
     #Version
         path('bootstrap/version', bootstrap.VersionView.as_view()),
     #Create Admin 
-        path('admin/', users.AdminView.as_view()), #--se quita?
+        path('admin/', users.AdminView.as_view()),
     #Admin Data 
-        path('lista-admins/', users.AdminAll.as_view()), #--se quita?
+        path('lista-admins/', users.AdminAll.as_view()),
     #Edit Admin
         path('admins-edit/', users.AdminsViewEdit.as_view()),
-    #Create estudiante
-        path('Estudiantes/', Estudiantes.estudianteView.as_view()),
-    #estudiante Data
-        path('lista-Estudiantes/', Estudiantes.EstudiantesALL.as_view()),
-    #Edit estudiante
-        path('Estudiantes-edit/', Estudiantes.EstudiantesViewEdit.as_view()),
-    #Create organizador
-        path('Organizador/', Organizador.organizadorView.as_view()),
-    #organizador Data
-        path('lista-Organizador/', Organizador.OrganizadorAll.as_view()),
-    #Edit Organizador
-        path('Organizador-edit/', Organizador.OrganizadorViewEdit.as_view()),
 
+    #Create estudiante
+        #path('Estudiantes/', Estudiantes.estudianteView.as_view()),
+    #estudiante Data
+        #path('lista-Estudiantes/', Estudiantes.EstudiantesALL.as_view()),
+    #Edit estudiante
+        #path('Estudiantes-edit/', Estudiantes.EstudiantesViewEdit.as_view()),
+    #Create organizador
+        #path('Organizador/', Organizador.organizadorView.as_view()),
+    #organizador Data
+        #path('lista-Organizador/', Organizador.OrganizadorAll.as_view()),
+    #Edit Organizador
+        #path('Organizador-edit/', Organizador.OrganizadorViewEdit.as_view()),
     #Create Evento
-        path('eventos/', eventos.EventoView.as_view()),
+        #path('eventos/', eventos.EventoView.as_view()),
     #Evento Data
-        path('lista-eventos/', eventos.EventosAll.as_view()),
+        #path('lista-eventos/', eventos.EventosAll.as_view()),
     #Edit Admin
-        path('eventos-edit/', eventos.EventosViewEdit.as_view()),
+        #path('eventos-edit/', eventos.EventosViewEdit.as_view()),
 
     #Login
         path('token/', auth.CustomAuthToken.as_view()),
