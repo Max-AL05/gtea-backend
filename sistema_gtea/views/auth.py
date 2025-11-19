@@ -56,12 +56,12 @@ class CustomAuthToken(ObtainAuthToken):
                 return Response(estudiante,200)
             if role_names == 'organizador':
                 organizador = Organizador.objects.filter(user=user).first()
-                organizador = Organizadorerializer(organizador).data
+                organizador = OrganizadorSerializer(organizador).data
                 organizador["token"] = token.key
                 organizador["rol"] = "organizador"
                 return Response(organizador,200)
             if role_names == 'administrador':
-                user = UserSerializer(user, many=False).data
+                user = AdminSerializer(user, many=False).data #userSerializer
                 user['token'] = token.key
                 user["rol"] = "administrador"
                 return Response(user,200)

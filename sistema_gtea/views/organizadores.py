@@ -31,12 +31,12 @@ import string
 import random
 import json
 
-'''
+
 class OrganizadorAll(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     def get(self, request, *args, **kwargs):
         Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        Organizador = Organizadorerializer(Organizador, many=True).data
+        Organizador = OrganizadorSerializer(Organizador, many=True).data
         #Aquí convertimos los valores de nuevo a un array
         if not Organizador:
             return Response({},400)
@@ -50,7 +50,7 @@ class OrganizadorView(generics.CreateAPIView):
     # permission_classes = (permissions.IsAuthenticated,)
     def get(self, request, *args, **kwargs):
         organizador = get_object_or_404(Organizador, id = request.GET.get("id"))
-        organizador = Organizadorerializer(organizador, many=False).data
+        organizador = OrganizadorSerializer(organizador, many=False).data
         organizador["materias_json"] = json.loads(organizador["materias_json"])
         return Response(organizador, 200)
     
@@ -117,7 +117,7 @@ class OrganizadorViewEdit(generics.CreateAPIView):
 
         #Obtener total de Organizador
         Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        lista_Organizador = Organizadorerializer(Organizador, many=True).data
+        lista_Organizador = OrganizadorSerializer(Organizador, many=True).data
         #Aquí convertimos los valores de nuevo a un array
         if not lista_Organizador:
             return Response({},400)
@@ -151,7 +151,7 @@ class OrganizadorViewEdit(generics.CreateAPIView):
         temp.first_name = request.data["first_name"]
         temp.last_name = request.data["last_name"]
         temp.save()
-        user = Organizadorerializer(organizador, many=False).data
+        user = OrganizadorSerializer(organizador, many=False).data
 
         return Response(user,200)
     
@@ -164,45 +164,3 @@ class OrganizadorViewEdit(generics.CreateAPIView):
         except Exception as e:
             return Response({"details":"Algo pasó al eliminar"},400)
 
-'''
-
-class OrganizadorView(generics.GenericAPIView):
-        permission_classes = [permissions.IsAuthenticated]
-
-        def get(self, request, *args, **kwargs):
-            # Obtener el perfil del usuario autenticado
-            admin = get_object_or_404(Administradores, user=request.user)
-            serializer = AdminSerializer(admin)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        def put(self, request, *args, **kwargs):
-            # Actualizar perfil
-            admin = get_object_or_404(Administradores, user=request.user)
-            serializer = AdminSerializer(admin, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class OrganizadorViewEdit(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        current_password = request.data.get("contrasena_actual")
-        new_password = request.data.get("nueva_contrasena")
-        confirm_password = request.data.get("confirmar_nueva_contrasena")
-
-        if not authenticate(username=user.username, password=current_password):
-            return Response({"error": "Contraseña actual incorrecta"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if new_password != confirm_password:
-            return Response({"error": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Cambiar contraseña
-        user.set_password(new_password)
-        user.save()
-        # Mantener sesión activa
-        update_session_auth_hash(request, user)  
-
-        return Response({"message": "Contraseña actualizada correctamente"}, status=status.HTTP_200_OK)

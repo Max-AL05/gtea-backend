@@ -72,15 +72,13 @@ class EventosViewEdit(generics.CreateAPIView):
         # iduser=request.data["id"]
         evento = get_object_or_404(Evento, id=request.data["id"])
         evento.nombre_evento = request.data["nombre_evento"]
-        evento.tipo_evento = request.data["tipo_evento"]
-        evento.fecha_evento = request.data["fecha_evento"]
-        evento.hora_inicio = request.data["hora_inicio"]
-        evento.hora_final = request.data["hora_final"]
-        evento.lugar = request.data["lugar"]
-        evento.publico_json = json.dumps(request.data["publico_json"])
-        evento.programa_educativo = request.data["programa_educativo"]
-        evento.responsable_evento = request.data["responsable_evento"]
         evento.descripcion = request.data["descripcion"]
+        evento.categoria = request.data["categoria"]
+        evento.organizador = request.data["organizador"]
+        evento.lugar = request.data["lugar"]
+        evento.modalidad = request.data["modalidad"]
+        evento.fecha_inicio = request.data["fecha_inicio"]
+        evento.fecha_fin = request.data["fecha_fin"]
         evento.cupo = request.data["cupo"]
         evento.save()
         user = EventoSerializer(evento, many=False).data

@@ -58,8 +58,7 @@ class AdminView(generics.GenericAPIview):
         if not user:
             return Response({"error": "Correo o contraseña incorrectos"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Obtener o crear token
-        token, created = Token.objects.get_or_create(user=user)
+        token, created = Token.objects.get_or_create(user=user) # Obtener o crear token
 
         user_data = UserSerializer(user).data
 
@@ -70,7 +69,7 @@ class AdminView(generics.GenericAPIview):
         }, status=status.HTTP_200_OK)
 
 #crear cuenta
-class RegistroView(generics.GenericAPIView):
+class AdminView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
     @transaction.atomic
@@ -221,7 +220,7 @@ class AdminsViewEdit(generics.CreateAPIView):
 
         #Obtener total de Organizador
         Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        lista_Organizador = Organizadorerializer(Organizador, many=True).data
+        lista_Organizador = OrganizadorSerializer(Organizador, many=True).data
         #Aquí convertimos los valores de nuevo a un array
         if not lista_Organizador:
             return Response({},400)

@@ -26,14 +26,18 @@ class Estudianteserializer(serializers.ModelSerializer):
         model = Estudiantes
         fields = '__all__'
 
-class Organizadorerializer(serializers.ModelSerializer):
+class OrganizadorSerializer(serializers.ModelSerializer):
     user=UserSerializer(read_only=True)
     class Meta:
         model = Organizador
+        fields = '__all__'
+
+class CategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categoria
         fields = '__all__'
 
 class EventoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Evento
         fields = '__all__'
-

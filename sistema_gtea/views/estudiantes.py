@@ -106,7 +106,7 @@ class EstudiantesViewEdit(generics.CreateAPIView):
 
         #Obtener total de Organizador
         Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        lista_Organizador = Organizadorerializer(Organizador, many=True).data
+        lista_Organizador = OrganizadorSerializer(Organizador, many=True).data
         #Aquí convertimos los valores de nuevo a un array
         if not lista_Organizador:
             return Response({},400)

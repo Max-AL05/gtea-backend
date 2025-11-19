@@ -9,6 +9,7 @@ class BearerTokenAuthentication(TokenAuthentication):
     keyword = u"Bearer"
 
 class Administradores(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
@@ -25,7 +26,7 @@ def __str__(self):
 #TODO:
 
 class Estudiantes(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE) # <--- Falta esto
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
@@ -40,6 +41,7 @@ def __str__(self):
     return "Perfil del estudiante "+self.first_name+" "+self.last_name
     
 class Organizador(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
     telefono = models.CharField(max_length=255, null=True, blank=True) 
@@ -53,20 +55,29 @@ class Organizador(models.Model):
 def __str__(self):
     return "Perfil del organizador "+self.first_name+" "+self.last_name
 
+class Categoria(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    nombre_categoria = models.CharField(max_length=255)
+    descripcion = models.TextField(null=True, blank=True)
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "El nombre de la categoria es "+self.nombre_categoria
 
 class Evento(models.Model):
     id = models.BigAutoField(primary_key=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True, related_name='eventos')
     nombre_evento = models.CharField(max_length=255)
-    tipo_evento = models.CharField(max_length=255)
-    fecha_evento = models.DateTimeField(null=True, blank=True)
-    hora_inicio = models.TimeField(null=True, blank=True)
-    hora_final = models.TimeField(null=True, blank=True)
-    lugar = models.CharField(max_length=255)
-    publico_json = models.TextField(null=True, blank=True)
-    programa_educativo = models.CharField(max_length=255, null=True, blank=True)
-    responsable_evento = models.CharField(max_length=255, null=True, blank=True)
     descripcion = models.TextField()
+    categoria = models.CharField(max_length=255, null=True, blank=True)
+    organizador = models.CharField(max_length=255, null=True, blank=True)
+    lugar = models.CharField(max_length=255)
+    modalidad = models.CharField(max_length=255, null=True, blank=True)
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
+
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
 
@@ -74,4 +85,4 @@ class Evento(models.Model):
         return "El nombre del evento es "+self.nombre_evento
     
 #definir categoria y sedes
-#llave forania y llave priaria de classEvento
+#llave forania y llave primaria de classEvento
