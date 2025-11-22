@@ -16,10 +16,10 @@ class Administradores(models.Model):
     password = models.CharField(max_length=255, null=True, blank=True)
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
-'''
+# Campos específicos del perfil
     telefono = models.CharField(max_length=255, null=True, blank=True) 
     biografia = models.TextField(null=True, blank=True)
-'''
+
 def __str__(self):
     return "Perfil del admin "+self.first_name+" "+self.last_name
     

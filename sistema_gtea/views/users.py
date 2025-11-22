@@ -149,8 +149,74 @@ class AdminView(generics.GenericAPIView):
             "message": "Cuenta creada exitosamente"
         }, status=status.HTTP_201_CREATED)
 
+# informacion perfil
+class AdminsViewEdit(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
 
+    # Obtener perfil (Get simple o por ID)
+    def get(self, request, *args, **kwargs):
+        # Si mandan ID, buscamos ese, si no, intentamos buscar el del usuario logueado
+        id_admin = request.query_params.get('id')
+        if id_admin:
+            admin = get_object_or_404(Administradores, id=id_admin)
+        else:
+            # Busca el perfil del usuario que hace la petición
+            admin = get_object_or_404(Administradores, user=request.user)
+            
+        serializer = AdminSerializer(admin)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def put(self, request, *args, **kwargs):
+        # 1. Buscar el perfil de Administrador por ID
+        admin_profile = get_object_or_404(Administradores, id=request.data["id"])
+        
+        # 2. Actualizar datos del modelo Administradores (Perfil extendido)
+        admin_profile.telefono = request.data.get("telefono", admin_profile.telefono)
+        admin_profile.biografia = request.data.get("biografia", admin_profile.biografia)
+        
+        # Actualizamos también los campos espejo si se desea mantener sincronía
+        admin_profile.first_name = request.data.get("first_name", admin_profile.first_name)
+        admin_profile.last_name = request.data.get("last_name", admin_profile.last_name)
+        
+        admin_profile.save()
+
+        # 3. Actualizar datos del modelo User de Django (Login básico)
+        user_django = admin_profile.user
+        if user_django:
+            user_django.first_name = request.data.get("first_name", user_django.first_name)
+            user_django.last_name = request.data.get("last_name", user_django.last_name)
+            user_django.email = request.data.get("email", user_django.email)
+
+        password_actual = request.data.get("password_actual") # Contraseña Actual
+        password_nueva = request.data.get("password_nueva") # Nueva
+        password_confirmacion = request.data.get("password_nueva_confirm") # Confirmación
+
+        # Solo entramos aquí si el usuario escribió algo en los campos de contraseña
+        if password_actual and password_nueva and password_confirmacion:
+                
+            # A. Verificar si la contraseña actual es correcta
+            if user_django.check_password(password_actual):
+                    
+                # B. Verificar que la nueva y la confirmación sean iguales
+                if password_nueva == password_confirmacion:
+                        
+                    # C. Establecer la nueva contraseña (encriptada para el login)
+                    user_django.set_password(password_nueva)
+                        
+                    # D. Actualizar el campo espejo en el modelo Administradores (Texto plano si así lo tienes)
+                    admin_profile.password = password_nueva
+                    admin_profile.save()
+                else:
+                    return Response({"error": "Las nuevas contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": "La contraseña actual es incorrecta"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Guardamos el usuario de Django
+            user_django.save()
+
+        # 4. Responder con los datos actualizados
+        serializer = AdminSerializer(admin_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 '''''
 class AdminView(generics.CreateAPIView): #obtener tablas
