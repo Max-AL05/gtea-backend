@@ -167,3 +167,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
 }
+
+# En sistema_gtea/settings.py
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

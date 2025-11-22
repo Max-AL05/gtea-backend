@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin # type: ignore
 from django.urls import path # type: ignore
-from sistema_gtea.sistema_gtea.views import categorias
+from sistema_gtea.views import categorias
 from sistema_gtea.views import bootstrap, eventos
 from sistema_gtea.views.estudiantes import Estudiantes
 from sistema_gtea.views.organizadores import Organizador
@@ -30,7 +30,7 @@ urlpatterns = [
     #Admin Data 
         path('lista-admins/', users.AdminAll.as_view()),
     #Edit Admin
-        path('admins-edit/', users.AdminsViewEdit.as_view()),
+        #path('admins-edit/', users.AdminsViewEdit.as_view()),
 
     #Create estudiante
         #path('Estudiantes/', Estudiantes.estudianteView.as_view()),
@@ -48,9 +48,9 @@ urlpatterns = [
     # Create Categoria
         path('categorias/', categorias.CategoriaView.as_view()),
     # Categoria Data (Lista)
-        path('lista-categorias/', categorias.CategoriasAll.as_view()),
+        path('lista-categorias/', categorias.CategoriaAll.as_view()),
     # Edit Categoria
-        path('categorias-edit/', categorias.CategoriasViewEdit.as_view()),
+        path('categorias-edit/', categorias.CategoriaViewEdit.as_view()),
         
     #Create Evento
         path('eventos/', eventos.EventoView.as_view()),

@@ -26,7 +26,7 @@ from django_filters import rest_framework as filters # type: ignore
 from datetime import datetime
 from django.conf import settings # type: ignore
 from django.template.loader import render_to_string # type: ignore
-from django.contrib.auth.models import update_session_auth_hash # type: ignore
+#from django.contrib.auth.models import update_session_auth_hash # type: ignore
 from rest_framework import generics # type: ignore
 from rest_framework import permissions # type: ignore
 from rest_framework import status # type: ignore
@@ -46,7 +46,7 @@ class AdminAll(generics.CreateAPIView):
         return Response(lista, 200)
 
 #iniciar sesion
-class AdminView(generics.GenericAPIview):
+class AdminView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]  
 
     def post(self, request, *args, **kwargs):

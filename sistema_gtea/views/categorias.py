@@ -17,7 +17,7 @@ class CategoriaView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # LISTADO
-class CategoriasAll(APIView):
+class CategoriaAll(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -26,7 +26,7 @@ class CategoriasAll(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # EDICIÓN Y BORRADO
-class CategoriasViewEdit(APIView):
+class CategoriaViewEdit(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def put(self, request, *args, **kwargs):

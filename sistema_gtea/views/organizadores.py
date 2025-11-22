@@ -26,7 +26,7 @@ from django_filters import rest_framework as filters # type: ignore
 from datetime import datetime
 from django.conf import settings # type: ignore
 from django.template.loader import render_to_string # type: ignore
-from django.contrib.auth.models import update_session_auth_hash # type: ignore
+#from django.contrib.auth.models import update_session_auth_hash # type: ignore
 import string
 import random
 import json
