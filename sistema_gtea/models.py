@@ -31,12 +31,16 @@ class Estudiantes(models.Model):
     last_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
+    
+    # --- Campos Específicos (Reducidos) ---
+    telefono = models.CharField(max_length=255, null=True, blank=True)
+    biografia = models.TextField(null=True, blank=True)
+    # Agregamos campo de imagen para soportar la funcionalidad de editar foto
+    #imagen = models.ImageField(upload_to='perfil_estudiantes/', null=True, blank=True)
+
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
-'''
-    telefono = models.CharField(max_length=255, null=True, blank=True) 
-    biografia = models.TextField(null=True, blank=True)
-'''
+
 def __str__(self):
     return "Perfil del estudiante "+self.first_name+" "+self.last_name
     

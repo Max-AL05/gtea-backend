@@ -1,82 +1,58 @@
-from django.shortcuts import render # type: ignore
-from django.db.models import * # type: ignore
-from django.db import transaction # type: ignore
-from sistema_gtea.serializers import * # type: ignore
+from django.shortcuts import render, get_object_or_404
+from django.db import transaction
+from django.db.models import *
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication, TokenAuthentication # type: ignore
-from rest_framework.generics import CreateAPIView, DestroyAPIView, UpdateAPIView # type: ignore
-from rest_framework import permissions # type: ignore
-from rest_framework import generics # type: ignore
-from rest_framework import status # type: ignore
-from rest_framework.authtoken.views import ObtainAuthToken # type: ignore
-from rest_framework.authtoken.models import Token # type: ignore
-from rest_framework.response import Response # type: ignore
-from rest_framework.views import APIView # type: ignore
-from rest_framework.decorators import api_view # type: ignore
-from rest_framework.reverse import reverse # type: ignore
-from rest_framework import viewsets # type: ignore
-from django.shortcuts import get_object_or_404 # type: ignore
-from django.core import serializers # type: ignore
-from django.utils.html import strip_tags # type: ignore
-from django.contrib.auth import authenticate, login # type: ignore
-from django.contrib.auth.models import Group # type: ignore
-from django.contrib.auth import get_user_model # type: ignore
-from django_filters.rest_framework import DjangoFilterBackend # type: ignore
-from django_filters import rest_framework as filters # type: ignore
-from datetime import datetime
-from django.conf import settings # type: ignore
-from django.template.loader import render_to_string # type: ignore
-from rest_framework.parsers import MultiPartParser, FormParser # type: ignore
-import string
-import random
+from sistema_gtea.views import estudiantes # Importación circular fix (si se requiere)
+from sistema_gtea.serializers import *
 import json
 
+# 1. LISTAR TODOS LOS ESTUDIANTES
 class EstudiantesALL(generics.CreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    def get(self, request, *args, **kwargs):
-        Estudiantes = Estudiantes.objects.filter(user__is_active = 1).order_by("id")
-        Estudiantes = Estudianteserializer(Estudiantes, many=True).data
-        
-        return Response(Estudiantes, 200)
-
-#login
-class estudianteView(generics.CreateAPIView):
-    #Obtener usuario por ID
-    # permission_classes = (permissions.IsAuthenticated,)
-    def get(self, request, *args, **kwargs):
-        estudiante = get_object_or_404(Estudiantes, id = request.GET.get("id"))
-        estudiante = Estudianteserializer(estudiante, many=False).data
-        return Response(estudiante, 200)
+    permission_classes = (permissions.AllowAny,)
     
-    #Registrar nuevo usuario
+    def get(self, request, *args, **kwargs):
+        estudiantes = Estudiantes.objects.filter(user__is_active=1).order_by("id")
+        lista_estudiantes = Estudianteserializer(estudiantes, many=True).data
+        return Response(lista_estudiantes, 200)
+
+# 2. VER UN ESTUDIANTE Y REGISTRAR NUEVO
+class EstudiantesView(generics.CreateAPIView):
+    # permission_classes = (permissions.IsAuthenticated,) 
+
+    def get(self, request, *args, **kwargs):
+        estudiante_id = request.GET.get("id")
+        estudiante = get_object_or_404(Estudiantes, id=estudiante_id)
+        serializer = Estudianteserializer(estudiante, many=False).data
+        return Response(serializer, 200)
+    
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-
-        # 1. Validar que las contraseñas coincidan (Nuevo requerimiento del diseño)
+        # Validar contraseñas
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         
         if password != confirm_password:
              return Response({"message": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 2. Validar usuario existente
+        # Validar email
         email = request.data.get('email')
         existing_user = User.objects.filter(email=email).first()
 
         if existing_user:
             return Response({"message": f"El correo {email} ya está registrado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 3. Crear el Usuario Base (User Model)
-        # Usamos .get() para evitar errores si el campo no viene, aunque el front debería validarlo
-        first_name = request.data.get('first_name') # "Nombre" en el diseño
-        last_name = request.data.get('last_name')   # "Apellidos" en el diseño
-        
-        # Asumimos que si se registran desde esta pantalla, son Estudiantes por defecto
-        role = request.data.get('rol', 'Estudiante') 
-
         try:
+            # Crear Usuario Base
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            role = request.data.get('rol', 'Estudiante')
+
             user = User.objects.create(
-                username = email, # Usamos el email como username para el login
+                username = email,
                 email = email,
                 first_name = first_name,
                 last_name = last_name,
@@ -90,18 +66,10 @@ class estudianteView(generics.CreateAPIView):
             group.user_set.add(user)
             user.save()
 
-            # 4. Crear el Perfil de Estudiante (Datos opcionales)
-            # Como el diseño NO pide CURP ni RFC al inicio, usamos cadenas vacías "" o None.
-            # El usuario llenará esto después en la pantalla de "Editar Perfil".
+            # Crear Perfil de Estudiante (Sin clave_estudiante)
             estudiante = Estudiantes.objects.create(
                 user=user,
-                clave_estudiante= request.data.get("clave_estudiante", ""), # Opcional
-                fecha_nacimiento= request.data.get("fecha_nacimiento", None), # Opcional
-                curp= request.data.get("curp", "").upper(), # Opcional
-                rfc= request.data.get("rfc", "").upper(), # Opcional
-                edad= request.data.get("edad", None), # Opcional
-                telefono= request.data.get("telefono", ""), # Opcional
-                ocupacion= request.data.get("ocupacion", "") # Opcional
+                telefono = request.data.get("telefono", "")
             )
             estudiante.save()
 
@@ -111,41 +79,50 @@ class estudianteView(generics.CreateAPIView):
             }, status=201)
 
         except Exception as e:
-            # Si algo falla, el @transaction.atomic deshace todo
             return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
 
-class EstudiantesViewEdit(generics.UpdateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    # Agregamos parsers para poder recibir imágenes y texto al mismo tiempo
+# 3. ESTADÍSTICAS, EDICIÓN Y ELIMINACIÓN
+class EstudiantesViewEdit(generics.CreateAPIView):
+    permission_classes = (permissions.AllowAny,)
     parser_classes = (MultiPartParser, FormParser)
 
+    def get(self, request, *args, **kwargs):
+        total_admins = Administradores.objects.filter(user__is_active=1).count()
+        total_organizadores = Organizador.objects.filter(user__is_active=1).count()
+        total_estudiantes = Estudiantes.objects.filter(user__is_active=1).count()
+
+        return Response({
+            'admins': total_admins, 
+            'Organizador': total_organizadores, 
+            'Estudiantes': total_estudiantes 
+        }, 200)
+    
     def put(self, request, *args, **kwargs):
-        # 1. Obtener el usuario autenticado y su perfil de estudiante
-        user = request.user
-        estudiante = get_object_or_404(Estudiantes, user=user)
-
-        # 2. Actualizar datos del Modelo User (Nombre y Apellidos)
-        # Usamos .get(campo, valor_actual) para mantener el dato viejo si no envían nada nuevo
-        user.first_name = request.data.get("first_name", user.first_name)
-        user.last_name = request.data.get("last_name", user.last_name)
-        user.save()
-
-        # 3. Actualizar datos del Modelo Estudiantes
+        estudiante_id = request.data.get("id")
+        estudiante = get_object_or_404(Estudiantes, id=estudiante_id)
+        
+        # Actualizar datos (Sin clave_estudiante)
         estudiante.telefono = request.data.get("telefono", estudiante.telefono)
         estudiante.biografia = request.data.get("biografia", estudiante.biografia)
-
-        # 4. Manejo de la Foto de Perfil
-        # El frontend debe enviar el archivo con la key 'imagen'
+        
         if 'imagen' in request.FILES:
             estudiante.imagen = request.FILES['imagen']
-
+            
         estudiante.save()
 
-        return Response({"message": "Perfil actualizado correctamente"}, status=200)    
+        user_obj = estudiante.user
+        user_obj.first_name = request.data.get("first_name", user_obj.first_name)
+        user_obj.last_name = request.data.get("last_name", user_obj.last_name)
+        user_obj.save()
 
-from sistema_gtea.views.estudiantes import (
-    estudianteView,       # <--- La vista de registro
-    EstudiantesALL,       # <--- La vista de lista
-    EstudiantesViewEdit  # <--- La vista de edición  # <--- La vista de password     # <--- La vista de login
-)
+        serializer = Estudianteserializer(estudiante, many=False).data
+        return Response(serializer, 200)
+    
+    def delete(self, request, *args, **kwargs):
+        estudiante_id = request.GET.get("id")
+        estudiante = get_object_or_404(Estudiantes, id=estudiante_id)
+        try:
+            estudiante.user.delete()
+            return Response({"details": "Estudiante eliminado correctamente"}, 200)
+        except Exception as e:
+            return Response({"details": "Error al eliminar el estudiante"}, 400)

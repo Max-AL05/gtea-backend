@@ -17,7 +17,7 @@ from django.contrib import admin # type: ignore
 from django.urls import path # type: ignore
 from sistema_gtea.views import categorias
 from sistema_gtea.views import bootstrap, eventos
-from sistema_gtea.views.estudiantes import Estudiantes
+from sistema_gtea.views import estudiantes
 from sistema_gtea.views.organizadores import Organizador
 from sistema_gtea.views import users
 from sistema_gtea.views import auth
@@ -47,11 +47,11 @@ urlpatterns = [
         path('eventos-edit/', eventos.EventosViewEdit.as_view()),
 
     #Create estudiante
-        path('Estudiantes/', Estudiantes.estudianteView.as_view()),
+        path('Estudiantes/', estudiantes.EstudiantesView.as_view()),    
     #estudiante Data
-        path('lista-Estudiantes/', Estudiantes.EstudiantesALL.as_view()),
+        path('lista-Estudiantes/', estudiantes.EstudiantesALL.as_view()),
     #Edit estudiante
-        path('Estudiantes-edit/', Estudiantes.EstudiantesViewEdit.as_view()),
+        path('Estudiantes-edit/', estudiantes.EstudiantesViewEdit.as_view()),
 
     #Login
         path('token/', auth.CustomAuthToken.as_view()),
