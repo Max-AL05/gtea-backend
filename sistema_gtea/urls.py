@@ -32,19 +32,6 @@ urlpatterns = [
     #Edit Admin
         path('admins-edit/', users.AdminsViewEdit.as_view()),
 
-    #Create estudiante
-        #path('Estudiantes/', Estudiantes.estudianteView.as_view()),
-    #estudiante Data
-        #path('lista-Estudiantes/', Estudiantes.EstudiantesALL.as_view()),
-    #Edit estudiante
-        #path('Estudiantes-edit/', Estudiantes.EstudiantesViewEdit.as_view()),
-    #Create organizador
-        #path('Organizador/', Organizador.organizadorView.as_view()),
-    #organizador Data
-        #path('lista-Organizador/', Organizador.OrganizadorAll.as_view()),
-    #Edit Organizador
-        #path('Organizador-edit/', Organizador.OrganizadorViewEdit.as_view()),
-
     # Create Categoria
         path('categorias/', categorias.CategoriaView.as_view()),
     # Categoria Data (Lista)
@@ -59,8 +46,24 @@ urlpatterns = [
     #Edit Admin
         path('eventos-edit/', eventos.EventosViewEdit.as_view()),
 
+    #Create estudiante
+        path('Estudiantes/', Estudiantes.estudianteView.as_view()),
+    #estudiante Data
+        path('lista-Estudiantes/', Estudiantes.EstudiantesALL.as_view()),
+    #Edit estudiante
+        path('Estudiantes-edit/', Estudiantes.EstudiantesViewEdit.as_view()),
+
     #Login
         path('token/', auth.CustomAuthToken.as_view()),
     #Logout
         path('logout/', auth.Logout.as_view())
 ]
+
+
+   
+    #Create organizador
+        #path('Organizador/', Organizador.organizadorView.as_view()),
+    #organizador Data
+        #path('lista-Organizador/', Organizador.OrganizadorAll.as_view()),
+    #Edit Organizador
+        #path('Organizador-edit/', Organizador.OrganizadorViewEdit.as_view()),

@@ -65,9 +65,9 @@ class EventoView(generics.CreateAPIView):
             return Response({"evento_created_id": evento.id}, 201)
         return Response(evento.errors, status=status.HTTP_400_BAD_REQUEST)
 
+#editar evento
 class EventosViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    #Editar evento
     def put(self, request, *args, **kwargs):
         # iduser=request.data["id"]
         evento = get_object_or_404(Evento, id=request.data["id"])

@@ -26,6 +26,7 @@ from django_filters import rest_framework as filters # type: ignore
 from datetime import datetime
 from django.conf import settings # type: ignore
 from django.template.loader import render_to_string # type: ignore
+from rest_framework.parsers import MultiPartParser, FormParser # type: ignore
 import string
 import random
 import json
@@ -38,6 +39,7 @@ class EstudiantesALL(generics.CreateAPIView):
         
         return Response(Estudiantes, 200)
 
+#login
 class estudianteView(generics.CreateAPIView):
     #Obtener usuario por ID
     # permission_classes = (permissions.IsAuthenticated,)
@@ -50,103 +52,100 @@ class estudianteView(generics.CreateAPIView):
     @transaction.atomic
     def post(self, request, *args, **kwargs):
 
-        user = UserSerializer(data=request.data)
-        if user.is_valid():
-            #Grab user data
-            role = request.data['rol']
-            first_name = request.data['first_name']
-            last_name = request.data['last_name']
-            email = request.data['email']
-            password = request.data['password']
-            #Valida si existe el usuario o bien el email registrado
-            existing_user = User.objects.filter(email=email).first()
+        # 1. Validar que las contraseñas coincidan (Nuevo requerimiento del diseño)
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if password != confirm_password:
+             return Response({"message": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if existing_user:
-                return Response({"message":"Username "+email+", is already taken"},400)
+        # 2. Validar usuario existente
+        email = request.data.get('email')
+        existing_user = User.objects.filter(email=email).first()
 
-            user = User.objects.create( username = email,
-                                        email = email,
-                                        first_name = first_name,
-                                        last_name = last_name,
-                                        is_active = 1)
+        if existing_user:
+            return Response({"message": f"El correo {email} ya está registrado"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 3. Crear el Usuario Base (User Model)
+        # Usamos .get() para evitar errores si el campo no viene, aunque el front debería validarlo
+        first_name = request.data.get('first_name') # "Nombre" en el diseño
+        last_name = request.data.get('last_name')   # "Apellidos" en el diseño
+        
+        # Asumimos que si se registran desde esta pantalla, son Estudiantes por defecto
+        role = request.data.get('rol', 'Estudiante') 
 
+        try:
+            user = User.objects.create(
+                username = email, # Usamos el email como username para el login
+                email = email,
+                first_name = first_name,
+                last_name = last_name,
+                is_active = 1
+            )
+            user.set_password(password)
             user.save()
-            user.set_password(password) #Cifrar la contraseña
-            user.save()
 
+            # Asignar grupo
             group, created = Group.objects.get_or_create(name=role)
             group.user_set.add(user)
             user.save()
 
-            #Almacenar los datos adicionales del estudiante
-            estudiante = Estudiantes.objects.create(user=user,
-                                            clave_estudiante= request.data["clave_estudiante"],
-                                            fecha_nacimiento= request.data["fecha_nacimiento"],
-                                            curp= request.data["curp"].upper(),
-                                            rfc= request.data["rfc"].upper(),
-                                            edad= request.data["edad"],
-                                            telefono= request.data["telefono"],
-                                            ocupacion= request.data["ocupacion"])
+            # 4. Crear el Perfil de Estudiante (Datos opcionales)
+            # Como el diseño NO pide CURP ni RFC al inicio, usamos cadenas vacías "" o None.
+            # El usuario llenará esto después en la pantalla de "Editar Perfil".
+            estudiante = Estudiantes.objects.create(
+                user=user,
+                clave_estudiante= request.data.get("clave_estudiante", ""), # Opcional
+                fecha_nacimiento= request.data.get("fecha_nacimiento", None), # Opcional
+                curp= request.data.get("curp", "").upper(), # Opcional
+                rfc= request.data.get("rfc", "").upper(), # Opcional
+                edad= request.data.get("edad", None), # Opcional
+                telefono= request.data.get("telefono", ""), # Opcional
+                ocupacion= request.data.get("ocupacion", "") # Opcional
+            )
             estudiante.save()
 
-            return Response({"estudiante_created_id": estudiante.id }, 201)
+            return Response({
+                "estudiante_created_id": estudiante.id,
+                "message": "Usuario creado exitosamente"
+            }, status=201)
 
-        return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class EstudiantesViewEdit(generics.CreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    #Contar el total de cada tipo de usuarios
-    def get(self, request, *args, **kwargs):
-        #Obtener total de admins
-        admin = Administradores.objects.filter(user__is_active = 1).order_by("id")
-        lista_admins = AdminSerializer(admin, many=True).data
-        # Obtienes la cantidad de elementos en la lista
-        total_admins = len(lista_admins)
-
-        #Obtener total de Organizador
-        Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        lista_Organizador = OrganizadorSerializer(Organizador, many=True).data
-        #Aquí convertimos los valores de nuevo a un array
-        if not lista_Organizador:
-            return Response({},400)
-        for organizador in lista_Organizador:
-            organizador["materias_json"] = json.loads(organizador["materias_json"])
-        
-        total_Organizador = len(lista_Organizador)
-
-        #Obtener total de Estudiantes
-        Estudiantes = Estudiantes.objects.filter(user__is_active = 1).order_by("id")
-        lista_Estudiantes = Estudianteserializer(Estudiantes, many=True).data
-        total_Estudiantes = len(lista_Estudiantes)
-
-        return Response({'admins': total_admins, 'Organizador': total_Organizador, 'Estudiantes:':total_Estudiantes }, 200)
-    
-    #Editar estudiante
-    def put(self, request, *args, **kwargs):
-        # iduser=request.data["id"]
-        estudiante = get_object_or_404(Estudiantes, id=request.data["id"])
-        estudiante.clave_estudiante = request.data["clave_estudiante"]
-        estudiante.fecha_nacimiento = request.data["fecha_nacimiento"]
-        estudiante.telefono = request.data["telefono"]
-        estudiante.curp = request.data["curp"].upper()
-        estudiante.rfc = request.data["rfc"].upper()
-        estudiante.edad = request.data["edad"]
-        estudiante.ocupacion = request.data["ocupacion"]
-        estudiante.save()
-        temp = estudiante.user
-        temp.first_name = request.data["first_name"]
-        temp.last_name = request.data["last_name"]
-        temp.save()
-        user = Estudianteserializer(estudiante, many=False).data
-
-        return Response(user,200)
-    
-    #Eliminar estudiante
-    def delete(self, request, *args, **kwargs):
-        estudiante = get_object_or_404(Estudiantes, id=request.GET.get("id"))
-        try:
-            estudiante.user.delete()
-            return Response({"details":"estudiante eliminado"},200)
         except Exception as e:
-            return Response({"details":"Algo pasó al eliminar"},400)
+            # Si algo falla, el @transaction.atomic deshace todo
+            return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class EstudiantesViewEdit(generics.UpdateAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    # Agregamos parsers para poder recibir imágenes y texto al mismo tiempo
+    parser_classes = (MultiPartParser, FormParser)
+
+    def put(self, request, *args, **kwargs):
+        # 1. Obtener el usuario autenticado y su perfil de estudiante
+        user = request.user
+        estudiante = get_object_or_404(Estudiantes, user=user)
+
+        # 2. Actualizar datos del Modelo User (Nombre y Apellidos)
+        # Usamos .get(campo, valor_actual) para mantener el dato viejo si no envían nada nuevo
+        user.first_name = request.data.get("first_name", user.first_name)
+        user.last_name = request.data.get("last_name", user.last_name)
+        user.save()
+
+        # 3. Actualizar datos del Modelo Estudiantes
+        estudiante.telefono = request.data.get("telefono", estudiante.telefono)
+        estudiante.biografia = request.data.get("biografia", estudiante.biografia)
+
+        # 4. Manejo de la Foto de Perfil
+        # El frontend debe enviar el archivo con la key 'imagen'
+        if 'imagen' in request.FILES:
+            estudiante.imagen = request.FILES['imagen']
+
+        estudiante.save()
+
+        return Response({"message": "Perfil actualizado correctamente"}, status=200)    
+
+from sistema_gtea.views.estudiantes import (
+    estudianteView,       # <--- La vista de registro
+    EstudiantesALL,       # <--- La vista de lista
+    EstudiantesViewEdit  # <--- La vista de edición  # <--- La vista de password     # <--- La vista de login
+)

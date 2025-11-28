@@ -149,8 +149,8 @@ class AdminView(generics.GenericAPIView):
             "message": "Cuenta creada exitosamente"
         }, status=status.HTTP_201_CREATED)
 
-# informacion perfil
-class AdminsViewEdit(APIView):
+#informacion perfil
+class AdminsViewEdit(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     # Obtener perfil (Get simple o por ID)
@@ -167,20 +167,20 @@ class AdminsViewEdit(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
-        # 1. Buscar el perfil de Administrador por ID
+        #Buscar el perfil de Administrador por ID
         admin_profile = get_object_or_404(Administradores, id=request.data["id"])
         
-        # 2. Actualizar datos del modelo Administradores (Perfil extendido)
+        #Actualizar datos del modelo Administradores (Perfil extendido)
         admin_profile.telefono = request.data.get("telefono", admin_profile.telefono)
         admin_profile.biografia = request.data.get("biografia", admin_profile.biografia)
         
-        # Actualizamos también los campos espejo si se desea mantener sincronía
+        #Actualizamos también los campos espejo si se desea mantener sincronía
         admin_profile.first_name = request.data.get("first_name", admin_profile.first_name)
         admin_profile.last_name = request.data.get("last_name", admin_profile.last_name)
         
         admin_profile.save()
 
-        # 3. Actualizar datos del modelo User de Django (Login básico)
+        #Actualizar datos del modelo User de Django (Login básico)
         user_django = admin_profile.user
         if user_django:
             user_django.first_name = request.data.get("first_name", user_django.first_name)
