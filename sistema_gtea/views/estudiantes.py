@@ -69,6 +69,9 @@ class EstudiantesView(generics.CreateAPIView):
 
             estudiante = Estudiantes.objects.create(
                 user=user,
+                first_name = first_name,  # <--- Agregado
+                last_name = last_name,    # <--- Agregado
+                email = email,
                 telefono = request.data.get("telefono", "")
             )
             estudiante.save()
