@@ -16,9 +16,10 @@ class Administradores(models.Model):
     password = models.CharField(max_length=255, null=True, blank=True)
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
-# Campos específicos del perfil
+
     telefono = models.CharField(max_length=255, null=True, blank=True) 
     biografia = models.TextField(null=True, blank=True)
+    #imagen = models.ImageField(upload_to='perfil_admins/', null=True, blank=True)
 
 def __str__(self):
     return "Perfil del admin "+self.first_name+" "+self.last_name
@@ -32,10 +33,8 @@ class Estudiantes(models.Model):
     email = models.CharField(max_length=255, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     
-    # --- Campos Específicos (Reducidos) ---
     telefono = models.CharField(max_length=255, null=True, blank=True)
     biografia = models.TextField(null=True, blank=True)
-    # Agregamos campo de imagen para soportar la funcionalidad de editar foto
     #imagen = models.ImageField(upload_to='perfil_estudiantes/', null=True, blank=True)
 
     creation = models.DateTimeField(auto_now_add=True)
@@ -48,14 +47,16 @@ class Organizador(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
+    email = models.CharField(max_length=255, null=True, blank=True)
     telefono = models.CharField(max_length=255, null=True, blank=True) 
     biografia = models.TextField(null=True, blank=True)
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
-'''
-    email = models.CharField(max_length=255, null=True, blank=True)
+
     password = models.CharField(max_length=255, null=True, blank=True)
-'''
+
+    #imagen = models.ImageField(upload_to='perfil_estudiantes/', null=True, blank=True)
+
 def __str__(self):
     return "Perfil del organizador "+self.first_name+" "+self.last_name
 

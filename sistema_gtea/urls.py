@@ -1,24 +1,9 @@
-"""point_experts_api URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin # type: ignore
 from django.urls import path # type: ignore
 from sistema_gtea.views import categorias
 from sistema_gtea.views import bootstrap, eventos
 from sistema_gtea.views import estudiantes
-from sistema_gtea.views.organizadores import Organizador
+from sistema_gtea.views import organizadores
 from sistema_gtea.views import users
 from sistema_gtea.views import auth
 
@@ -53,6 +38,13 @@ urlpatterns = [
     #Edit estudiante
         path('Estudiantes-edit/', estudiantes.EstudiantesViewEdit.as_view()),
 
+    #Create organizador
+        path('Organizador/', organizadores.OrganizadorView.as_view()),
+    #organizador Data
+        path('lista-Organizador/', organizadores.OrganizadorAll.as_view()),
+    #Edit Organizador
+        path('Organizador-edit/', organizadores.OrganizadorViewEdit.as_view()),
+
     #Login
         path('token/', auth.CustomAuthToken.as_view()),
     #Logout
@@ -61,9 +53,4 @@ urlpatterns = [
 
 
    
-    #Create organizador
-        #path('Organizador/', Organizador.organizadorView.as_view()),
-    #organizador Data
-        #path('lista-Organizador/', Organizador.OrganizadorAll.as_view()),
-    #Edit Organizador
-        #path('Organizador-edit/', Organizador.OrganizadorViewEdit.as_view()),
+    

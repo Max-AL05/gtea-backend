@@ -1,166 +1,131 @@
-from django.shortcuts import render # type: ignore
-from django.db.models import * # type: ignore
-from django.db import transaction # type: ignore
-from sistema_gtea.serializers import *
+from django.shortcuts import render, get_object_or_404
+from django.db import transaction
+from django.db.models import *
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication, TokenAuthentication # type: ignore
-from rest_framework.generics import CreateAPIView, DestroyAPIView, UpdateAPIView # type: ignore
-from rest_framework import permissions # type: ignore
-from rest_framework import generics # type: ignore
-from rest_framework import status # type: ignore
-from rest_framework.authtoken.views import ObtainAuthToken # type: ignore
-from rest_framework.authtoken.models import Token # type: ignore
-from rest_framework.response import Response # type: ignore
-from rest_framework.views import APIView # type: ignore
-from rest_framework.decorators import api_view # type: ignore
-from rest_framework.reverse import reverse # type: ignore
-from rest_framework import viewsets # type: ignore
-from django.shortcuts import get_object_or_404 # type: ignore
-from django.core import serializers # type: ignore
-from django.utils.html import strip_tags # type: ignore
-from django.contrib.auth import authenticate, login # type: ignore
-from django.contrib.auth.models import Group # type: ignore
-from django.contrib.auth import get_user_model # type: ignore
-from django_filters.rest_framework import DjangoFilterBackend # type: ignore
-from django_filters import rest_framework as filters # type: ignore
-from datetime import datetime
-from django.conf import settings # type: ignore
-from django.template.loader import render_to_string # type: ignore
-#from django.contrib.auth.models import update_session_auth_hash # type: ignore
-import string
-import random
+from sistema_gtea.serializers import *
 import json
 
-
+# 1. LISTAR TODOS LOS ORGANIZADORES
 class OrganizadorAll(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    def get(self, request, *args, **kwargs):
-        Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        Organizador = OrganizadorSerializer(Organizador, many=True).data
-        #Aquí convertimos los valores de nuevo a un array
-        if not Organizador:
-            return Response({},400)
-        for organizador in Organizador:
-            organizador["materias_json"] = json.loads(organizador["materias_json"])
-
-        return Response(Organizador, 200)
-
-class OrganizadorView(generics.CreateAPIView):
-    #Obtener usuario por ID
-    # permission_classes = (permissions.IsAuthenticated,)
-    def get(self, request, *args, **kwargs):
-        organizador = get_object_or_404(Organizador, id = request.GET.get("id"))
-        organizador = OrganizadorSerializer(organizador, many=False).data
-        organizador["materias_json"] = json.loads(organizador["materias_json"])
-        return Response(organizador, 200)
     
+    def get(self, request, *args, **kwargs):
+        organizadores = Organizador.objects.filter(user__is_active=1).order_by("id")
+        lista_organizadores = OrganizadorSerializer(organizadores, many=True).data
+        return Response(lista_organizadores, 200)
 
-    #Registrar nuevo usuario
+# 2. VER UN ORGANIZADOR Y REGISTRAR NUEVO
+class OrganizadorView(generics.CreateAPIView):
+    # permission_classes = (permissions.IsAuthenticated,) 
+
+    def get(self, request, *args, **kwargs):
+        organizador_id = request.GET.get("id")
+        organizador = get_object_or_404(Organizador, id=organizador_id)
+        serializer = OrganizadorSerializer(organizador, many=False).data
+        return Response(serializer, 200)
+    
     @transaction.atomic
     def post(self, request, *args, **kwargs):
+        
+        email = request.data.get('email')
+        if not email:
+            return Response({"message": "El campo 'email' es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = UserSerializer(data=request.data)
-        if user.is_valid():
-            #Grab user data
-            role = request.data['rol']
-            first_name = request.data['first_name']
-            last_name = request.data['last_name']
-            email = request.data['email']
-            password = request.data['password']
-            #Valida si existe el usuario o bien el email registrado
-            existing_user = User.objects.filter(email=email).first()
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if password != confirm_password:
+             return Response({"message": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if existing_user:
-                return Response({"message":"Username "+email+", is already taken"},400)
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            return Response({"message": f"El correo {email} ya está registrado"}, status=status.HTTP_400_BAD_REQUEST)
 
-            user = User.objects.create( username = email,
-                                        email = email,
-                                        first_name = first_name,
-                                        last_name = last_name,
-                                        is_active = 1)
+        try:
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            role = request.data.get('rol', 'Organizador')
 
-
-            user.save()
-            user.set_password(password) #Cifrar la contraseña
+            user = User.objects.create(
+                username = email,
+                email = email,
+                first_name = first_name,
+                last_name = last_name,
+                is_active = 1
+            )
+            user.set_password(password)
             user.save()
 
             group, created = Group.objects.get_or_create(name=role)
             group.user_set.add(user)
             user.save()
 
-            #Almacenar los datos adicionales del estudiante
-            organizador = Organizador.objects.create(user=user,
-                                            clave_organizador= request.data["clave_organizador"],
-                                            fecha_nacimiento= request.data["fecha_nacimiento"],
-                                            curp= request.data["curp"].upper(),
-                                            rfc= request.data["rfc"].upper(),
-                                            edad= request.data["edad"],
-                                            telefono= request.data["telefono"],
-                                            cubiculo= request.data["cubiculo"],
-                                            area_investigacion= request.data["area_investigacion"],
-                                            materias_json= json.dumps(request.data["materias_json"]))
+            organizador = Organizador.objects.create(
+                user=user,
+                first_name=first_name,
+                last_name=last_name,
+                telefono = request.data.get("telefono", ""),
+                biografia = request.data.get("biografia", "")
+            )
             organizador.save()
 
-            return Response({"organizador_created_id": organizador.id }, 201)
+            return Response({
+                "organizador_created_id": organizador.id,
+                "message": "Organizador creado exitosamente"
+            }, status=201)
 
-        return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        except Exception as e:
+            return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+# 3. DASHBOARD, EDICIÓN Y ELIMINACIÓN
 class OrganizadorViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    #Contar el total de cada tipo de usuarios
+    parser_classes = (MultiPartParser, FormParser)
+
     def get(self, request, *args, **kwargs):
-        #Obtener total de admins
-        admin = Administradores.objects.filter(user__is_active = 1).order_by("id")
-        lista_admins = AdminSerializer(admin, many=True).data
-        # Obtienes la cantidad de elementos en la lista
-        total_admins = len(lista_admins)
+        total_admins = Administradores.objects.filter(user__is_active=1).count()
+        total_organizadores = Organizador.objects.filter(user__is_active=1).count()
+        total_estudiantes = Estudiantes.objects.filter(user__is_active=1).count()
 
-        #Obtener total de Organizador
-        Organizador = Organizador.objects.filter(user__is_active = 1).order_by("id")
-        lista_Organizador = OrganizadorSerializer(Organizador, many=True).data
-        #Aquí convertimos los valores de nuevo a un array
-        if not lista_Organizador:
-            return Response({},400)
-        for organizador in lista_Organizador:
-            organizador["materias_json"] = json.loads(organizador["materias_json"])
-        
-        total_Organizador = len(lista_Organizador)
-
-        #Obtener total de Estudiantes
-        Estudiantes = Estudiantes.objects.filter(user__is_active = 1).order_by("id")
-        lista_Estudiantes = Estudianteserializer(Estudiantes, many=True).data
-        total_Estudiantes = len(lista_Estudiantes)
-
-        return Response({'admins': total_admins, 'Organizador': total_Organizador, 'Estudiantes:':total_Estudiantes }, 200)
+        return Response({
+            'admins': total_admins, 
+            'Organizador': total_organizadores, 
+            'Estudiantes': total_estudiantes 
+        }, 200)
     
-    #Editar organizador
+    # Editar Organizador
     def put(self, request, *args, **kwargs):
-        # iduser=request.data["id"]
-        organizador = get_object_or_404(Organizador, id=request.data["id"])
-        organizador.clave_organizador = request.data["clave_organizador"]
-        organizador.fecha_nacimiento = request.data["fecha_nacimiento"]
-        organizador.telefono = request.data["telefono"]
-        organizador.curp = request.data["curp"].upper()
-        organizador.rfc = request.data["rfc"].upper()
-        organizador.edad = request.data["edad"]
-        organizador.cubiculo = request.data["cubiculo"]
-        organizador.area_investigacion = request.data["area_investigacion"]
-        organizador.materias_json = json.dumps(request.data["materias_json"])
+        organizador_id = request.data.get("id")
+        organizador = get_object_or_404(Organizador, id=organizador_id)
+        
+        organizador.telefono = request.data.get("telefono", organizador.telefono)
+        organizador.biografia = request.data.get("biografia", organizador.biografia)
+        
+        #if 'imagen' in request.FILES:
+            #organizador.imagen = request.FILES['imagen']
+        
+        organizador.first_name = request.data.get("first_name", organizador.first_name)
+        organizador.last_name = request.data.get("last_name", organizador.last_name)
         organizador.save()
-        temp = organizador.user
-        temp.first_name = request.data["first_name"]
-        temp.last_name = request.data["last_name"]
-        temp.save()
-        user = OrganizadorSerializer(organizador, many=False).data
 
-        return Response(user,200)
+        user_obj = organizador.user
+        user_obj.first_name = request.data.get("first_name", user_obj.first_name)
+        user_obj.last_name = request.data.get("last_name", user_obj.last_name)
+        user_obj.save()
+
+        serializer = OrganizadorSerializer(organizador, many=False).data
+        return Response(serializer, 200)
     
-    #Eliminar organizador
+    # Eliminar Organizador
     def delete(self, request, *args, **kwargs):
-        organizador = get_object_or_404(Organizador, id=request.GET.get("id"))
+        organizador_id = request.GET.get("id")
+        organizador = get_object_or_404(Organizador, id=organizador_id)
         try:
             organizador.user.delete()
-            return Response({"details":"organizador eliminado"},200)
+            return Response({"details": "Organizador eliminado correctamente"}, 200)
         except Exception as e:
-            return Response({"details":"Algo pasó al eliminar"},400)
-
+            return Response({"details": "Error al eliminar"}, 400)

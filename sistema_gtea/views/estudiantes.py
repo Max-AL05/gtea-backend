@@ -31,14 +31,17 @@ class EstudiantesView(generics.CreateAPIView):
     
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        # Validar contraseñas
+
+        email = request.data.get('email')
+        if not email:
+            return Response({"message": "El campo 'email' es obligatorio"}, status=status.HTTP_400_BAD_REQUEST)
+
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         
         if password != confirm_password:
              return Response({"message": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validar email
         email = request.data.get('email')
         existing_user = User.objects.filter(email=email).first()
 
@@ -46,7 +49,6 @@ class EstudiantesView(generics.CreateAPIView):
             return Response({"message": f"El correo {email} ya está registrado"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Crear Usuario Base
             first_name = request.data.get('first_name')
             last_name = request.data.get('last_name')
             role = request.data.get('rol', 'Estudiante')
@@ -61,12 +63,10 @@ class EstudiantesView(generics.CreateAPIView):
             user.set_password(password)
             user.save()
 
-            # Asignar grupo
             group, created = Group.objects.get_or_create(name=role)
             group.user_set.add(user)
             user.save()
 
-            # Crear Perfil de Estudiante (Sin clave_estudiante)
             estudiante = Estudiantes.objects.create(
                 user=user,
                 telefono = request.data.get("telefono", "")
@@ -101,7 +101,6 @@ class EstudiantesViewEdit(generics.CreateAPIView):
         estudiante_id = request.data.get("id")
         estudiante = get_object_or_404(Estudiantes, id=estudiante_id)
         
-        # Actualizar datos (Sin clave_estudiante)
         estudiante.telefono = request.data.get("telefono", estudiante.telefono)
         estudiante.biografia = request.data.get("biografia", estudiante.biografia)
         
