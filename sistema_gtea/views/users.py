@@ -71,6 +71,7 @@ class AdminView(generics.CreateAPIView):
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
+                password = user.password,
                 telefono = request.data.get("telefono", ""),
                 biografia = request.data.get("biografia", "")
             )

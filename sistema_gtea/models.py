@@ -83,6 +83,7 @@ class Evento(models.Model):
     fecha_fin = models.DateTimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
 
+    publico_json = models.TextField(null=True, blank=True, default="[]")
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
 

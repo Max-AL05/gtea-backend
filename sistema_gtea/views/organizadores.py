@@ -66,8 +66,10 @@ class OrganizadorView(generics.CreateAPIView):
 
             organizador = Organizador.objects.create(
                 user=user,
+                email = email,
                 first_name=first_name,
                 last_name=last_name,
+                password = user.password,
                 telefono = request.data.get("telefono", ""),
                 biografia = request.data.get("biografia", "")
             )
