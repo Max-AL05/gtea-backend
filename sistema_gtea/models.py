@@ -80,7 +80,7 @@ class Evento(models.Model):
     lugar = models.CharField(max_length=255)
     modalidad = models.CharField(max_length=255, null=True, blank=True)
     fecha_evento = models.DateField(null=True, blank=True)
-    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_inicio = models.TimeField(null=True, blank=True)   
     hora_fin = models.TimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
 

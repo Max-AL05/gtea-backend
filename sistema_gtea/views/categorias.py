@@ -1,48 +1,74 @@
-from django.shortcuts import render, get_object_or_404 # type: ignore
-from rest_framework.views import APIView # type: ignore
-from rest_framework.response import Response # type: ignore
-from rest_framework import status, permissions # type: ignore
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser 
 from sistema_gtea.models import Categoria
 from sistema_gtea.serializers import CategoriaSerializer
+import json
 
-# crear categoria
-class CategoriaView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+def es_admin(user):
+    return user.is_authenticated and user.groups.filter(name__in=['Administrador', 'Admin', 'administrador']).exists()
 
-    def post(self, request, *args, **kwargs):
-        serializer = CategoriaSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# LISTADO
-class CategoriaAll(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+class CategoriaAll(generics.CreateAPIView):
+    permission_classes = (permissions.AllowAny,)
 
     def get(self, request, *args, **kwargs):
-        categorias = Categoria.objects.all()
-        serializer = CategoriaSerializer(categorias, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        categorias = Categoria.objects.all().order_by("id")
+        categorias_data = CategoriaSerializer(categorias, many=True).data
+        
+        if not categorias_data:
+            return Response([], 200)
+            
+        return Response(categorias_data, 200)
 
-# EDICIÓN Y BORRADO
-class CategoriaViewEdit(APIView):
+class CategoriaView(generics.CreateAPIView):
+    permission_classes = (permissions.AllowAny,)
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request, *args, **kwargs):
+        categoria = get_object_or_404(Categoria, id=request.GET.get("id"))
+        categoria_data = CategoriaSerializer(categoria, many=False).data
+        return Response(categoria_data, 200)
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        if not es_admin(request.user):
+            return Response({"details": "Acción denegada. Solo administradores pueden crear categorías."}, status=403)
+
+        serializer = CategoriaSerializer(data=request.data)
+        if serializer.is_valid():
+            categoria_guardada = serializer.save()
+            return Response({"categoria_created_id": categoria_guardada.id}, 201)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CategoriaViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-
+    parser_classes = (MultiPartParser, FormParser)
+    #editar categoría
     def put(self, request, *args, **kwargs):
+        if not es_admin(request.user):
+            return Response({"details": "Acción denegada. Solo administradores pueden editar."}, status=403)
+
         categoria = get_object_or_404(Categoria, id=request.data["id"])
         
-        # Asegúrate de que el frontend envíe estos nombres exactos
         categoria.nombre_categoria = request.data["nombre_categoria"]
         categoria.descripcion = request.data["descripcion"]
         
         categoria.save()
         
         categoria_data = CategoriaSerializer(categoria, many=False).data
-        
-        return Response(categoria_data, status=200)
-
+        return Response(categoria_data, 200)
+    
+    #eliminar categoria
     def delete(self, request, *args, **kwargs):
-        categoria = get_object_or_404(Categoria, id=request.data["id"])
-        categoria.delete()
-        return Response({"message": "Categoría eliminada correctamente"}, status=status.HTTP_204_NO_CONTENT)
+        if not es_admin(request.user):
+            return Response({"details": "Acción denegada. Solo administradores pueden eliminar."}, status=403)
+
+        categoria = get_object_or_404(Categoria, id=request.GET.get("id"))
+        try:
+            categoria.delete()
+            return Response({"details": "Categoría eliminada"}, 200)
+        except Exception as e:
+            return Response({"details": "Algo pasó al eliminar"}, 400)

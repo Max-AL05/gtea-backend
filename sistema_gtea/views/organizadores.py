@@ -9,7 +9,7 @@ from sistema_gtea.models import *
 from sistema_gtea.serializers import *
 import json
 
-# 1. LISTAR TODOS LOS ORGANIZADORES
+# 1 LISTAR TODOS LOS ORGANIZADORES
 class OrganizadorAll(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     
@@ -18,7 +18,7 @@ class OrganizadorAll(generics.CreateAPIView):
         lista_organizadores = OrganizadorSerializer(organizadores, many=True).data
         return Response(lista_organizadores, 200)
 
-# 2. VER UN ORGANIZADOR Y REGISTRAR NUEVO
+# 2 REGISTRAR NUEVO
 class OrganizadorView(generics.CreateAPIView):
     # permission_classes = (permissions.IsAuthenticated,) 
 
@@ -83,7 +83,7 @@ class OrganizadorView(generics.CreateAPIView):
         except Exception as e:
             return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# 3. DASHBOARD, EDICIÓN Y ELIMINACIÓN
+# DASHBOARD, EDICIÓN Y ELIMINACIÓN
 class OrganizadorViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     #parser_classes = (MultiPartParser, FormParser)
@@ -104,19 +104,15 @@ class OrganizadorViewEdit(generics.CreateAPIView):
         organizador_id = request.data.get("id")
         organizador = get_object_or_404(Organizador, id=organizador_id)
         
-        organizador.telefono = request.data.get("telefono", organizador.telefono)
-        organizador.biografia = request.data.get("biografia", organizador.biografia)
-        
-        #if 'imagen' in request.FILES:
-            #organizador.imagen = request.FILES['imagen']
-        
-        organizador.first_name = request.data.get("first_name", organizador.first_name)
-        organizador.last_name = request.data.get("last_name", organizador.last_name)
+        organizador.telefono = request.data["telefono"]
+        organizador.biografia = request.data["biografia"]
+        organizador.first_name = request.data["first_name"]
+        organizador.last_name = request.data["last_name"]
         organizador.save()
 
         user_obj = organizador.user
-        user_obj.first_name = request.data.get("first_name", user_obj.first_name)
-        user_obj.last_name = request.data.get("last_name", user_obj.last_name)
+        user_obj.first_name = request.data["first_name"]
+        user_obj.last_name = request.data["last_name"]
         user_obj.save()
 
         serializer = OrganizadorSerializer(organizador, many=False).data
