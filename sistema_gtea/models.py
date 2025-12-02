@@ -90,6 +90,17 @@ class Evento(models.Model):
 
     def __str__(self):
         return "El nombre del evento es "+self.nombre_evento
-    
-#definir categoria y sedes
-#llave forania y llave primaria de classEvento
+
+class Sede(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    edificio = models.CharField(max_length=255)
+    aula = models.CharField(max_length=255)
+    capacidad = models.PositiveIntegerField()
+    recursos_json = models.TextField(null=True, blank=True, default="[]") 
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+    #imagen = models.ImageField(upload_to='sedes/', null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.edificio} - {self.aula}"
+

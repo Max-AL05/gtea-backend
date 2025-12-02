@@ -106,19 +106,19 @@ class AdminsViewEdit(generics.CreateAPIView):
         admin_id = request.data.get("id")
         admin = get_object_or_404(Administradores, id=admin_id)
         
-        admin.telefono = request.data.get("telefono", admin.telefono)
-        admin.biografia = request.data.get("biografia", admin.biografia)
+        admin.telefono = request.data["telefono"]
+        admin.biografia = request.data["biografia"]
         
         #if 'imagen' in request.FILES:
             #admin.imagen = request.FILES['imagen']
             
-        admin.first_name = request.data.get("first_name", admin.first_name)
-        admin.last_name = request.data.get("last_name", admin.last_name)
+        admin.first_name = request.data["first_name"]
+        admin.last_name = request.data["last_name"]
         admin.save()
 
         user_obj = admin.user
-        user_obj.first_name = request.data.get("first_name", user_obj.first_name)
-        user_obj.last_name = request.data.get("last_name", user_obj.last_name)
+        user_obj.first_name = request.data["first_name"]
+        user_obj.last_name = request.data["last_name"]
         user_obj.save()
 
         serializer = AdminSerializer(admin, many=False).data
