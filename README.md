@@ -175,16 +175,16 @@ Ej:
 			"nombre": "Español",
 			"video_url": "https://cdnconventio.b-cdn.net/herbalife-seminario-2021/videos/falso_en_vivo_test.mp4",
 			"duracion_segundos": 1168,
-			"fecha_inicio": "2020-12-18 15:48:00 +0000",
-			"fecha_fin": "2020-12-18 16:00:00 +0000"
+			"hora_inicio": "2020-12-18 15:48:00 +0000",
+			"hora_fin": "2020-12-18 16:00:00 +0000"
 		},
 		{
 			"slug": "english",
 			"nombre": "English",
 			"video_url": "https://cdnconventio.b-cdn.net/herbalife-seminario-2021/videos/falso_en_vivo_test_2.mp4",
 			"duracion_segundos": 1168,
-			"fecha_inicio": "2020-12-18 15:48:00 +0000",
-			"fecha_fin": "2020-12-18 16:00:00 +0000"
+			"hora_inicio": "2020-12-18 15:48:00 +0000",
+			"hora_fin": "2020-12-18 16:00:00 +0000"
 		}
 	],
 	"saludo": "\u00a1Bienvenidos!",
@@ -206,7 +206,7 @@ Los interactivos disponibles hasta ahora son:
     "nombre": "Cadena Musical 'Resistiré'",
     "warmup": true,
     "main": false,
-    "fecha_inicio": "2020-12-15 09:00",
+    "hora_inicio": "2020-12-15 09:00",
     "tutorial_url": "https://cdnconventio.b-cdn.net/cie-mensaje-2020/videos/RESISTIRE_CIE.mp4",
     "icon":"https://cdnconventio.b-cdn.net/cie-mensaje-2020/assets/cadena_musical.png",
     "instrucciones":{
@@ -236,7 +236,7 @@ Los interactivos disponibles hasta ahora son:
         "nombre": "Adivina la canción",
         "warmup": false,
         "main": true,
-        "fecha_inicio": "2020-12-11 08:00",
+        "hora_inicio": "2020-12-11 08:00",
         "icon": "https://storage.googleapis.com/cocacola2020/assets/adivina_cancion_icon.png",
         "max_jugadores": 2,
         "canciones": [
@@ -278,7 +278,7 @@ Los interactivos disponibles hasta ahora son:
     "nombre": "100 mexicanos dijeron",
     "warmup": false,
     "main": true,
-    "fecha_inicio": "2020-12-11 08:00",
+    "hora_inicio": "2020-12-11 08:00",
     "icon": "https://storage.googleapis.com/cocacola2020/assets/100_mexicanos_dijeron_icon.png",
     "max_jugadores": 2,
     "preguntas": [

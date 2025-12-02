@@ -79,8 +79,9 @@ class Evento(models.Model):
     organizador = models.CharField(max_length=255, null=True, blank=True)
     lugar = models.CharField(max_length=255)
     modalidad = models.CharField(max_length=255, null=True, blank=True)
-    fecha_inicio = models.DateTimeField(null=True, blank=True)
-    fecha_fin = models.DateTimeField(null=True, blank=True)
+    fecha_evento = models.DateField(null=True, blank=True)
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
 
     publico_json = models.TextField(null=True, blank=True, default="[]")

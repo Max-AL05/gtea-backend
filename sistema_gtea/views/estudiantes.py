@@ -3,7 +3,7 @@ from django.db import transaction
 from django.db.models import *
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+#from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
 from sistema_gtea.views import estudiantes # Importación circular fix (si se requiere)
@@ -88,7 +88,7 @@ class EstudiantesView(generics.CreateAPIView):
 # 3. ESTADÍSTICAS, EDICIÓN Y ELIMINACIÓN
 class EstudiantesViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
-    parser_classes = (MultiPartParser, FormParser)
+    #parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
         total_admins = Administradores.objects.filter(user__is_active=1).count()
