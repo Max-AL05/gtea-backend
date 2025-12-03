@@ -72,7 +72,6 @@ class Categoria(models.Model):
 
 class Evento(models.Model):
     id = models.BigAutoField(primary_key=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True, related_name='eventos')
     nombre_evento = models.CharField(max_length=255)
     descripcion = models.TextField()
     categoria = models.CharField(max_length=255, null=True, blank=True)

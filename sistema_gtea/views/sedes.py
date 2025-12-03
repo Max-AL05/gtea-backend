@@ -2,8 +2,8 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-#from rest_framework.parsers import MultiPartParser, FormParser 
-from sistema_gtea.models import Sede
+from django.db.models import Sum, Count
+from sistema_gtea.models import Sede, Evento
 from sistema_gtea.serializers import SedeSerializer
 import json
 
@@ -30,7 +30,6 @@ class SedesAll(generics.CreateAPIView):
 
 class SedeView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
-    #parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
         sede = get_object_or_404(Sede, id=request.GET.get("id"))
@@ -63,7 +62,6 @@ class SedeView(generics.CreateAPIView):
 
 class SedesViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    #parser_classes = (MultiPartParser, FormParser)
     
     # Editar Sede
     def put(self, request, *args, **kwargs):
@@ -99,3 +97,25 @@ class SedesViewEdit(generics.CreateAPIView):
             return Response({"details": "Sede eliminada"}, 200)
         except Exception as e:
             return Response({"details": "Algo pasó al eliminar"}, 400)
+
+
+    def get(self, request, *args, **kwargs):
+        total_sedes = Sede.objects.count()
+
+        total_capacidad = Sede.objects.aggregate(Sum('capacidad'))['capacidad__sum'] or 0
+
+        lugar_top = Evento.objects.values('lugar') \
+                          .annotate(total=Count('id')) \
+                          .order_by('-total') \
+                          .first()
+
+        nombre_lugar = "Sin datos"
+
+        if lugar_top:
+            nombre_lugar = lugar_top['lugar']
+
+        return Response({
+            'Total Sedes': total_sedes,
+            'Capacidad Total': total_capacidad,
+            'Aula mas usada': nombre_lugar
+        }, 200)

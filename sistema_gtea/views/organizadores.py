@@ -93,10 +93,13 @@ class OrganizadorViewEdit(generics.CreateAPIView):
         total_organizadores = Organizador.objects.filter(user__is_active=1).count()
         total_estudiantes = Estudiantes.objects.filter(user__is_active=1).count()
 
+        total_usuarios = total_admins + total_organizadores + total_estudiantes
+
         return Response({
             'admins': total_admins, 
             'Organizador': total_organizadores, 
-            'Estudiantes': total_estudiantes 
+            'Estudiantes': total_estudiantes,
+            'total_usuarios': total_usuarios  # <--- Nuevo campo
         }, 200)
     
     # Editar Organizador

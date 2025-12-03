@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.db.models import Count
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser 
@@ -7,11 +8,13 @@ from sistema_gtea.models import Evento
 from sistema_gtea.serializers import EventoSerializer
 import json
 
+# Función auxiliar para validar si es Admin
 def es_admin(user):
-    return user.is_authenticated and user.groups.filter(name__in=['Administrador', 'Admin', 'administrador']).exists()
+    return user.groups.filter(name__in=['Administrador', 'Admin', 'administrador']).exists()
 
 class EventosAll(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
+    # Todos los usuarios logueados pueden ver la lista
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         eventos = Evento.objects.all().order_by("id")
@@ -29,9 +32,10 @@ class EventosAll(generics.CreateAPIView):
         return Response(eventos_data, 200)
 
 class EventoView(generics.CreateAPIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
 
+    #Ver detalle (Público para usuarios logueados)
     def get(self, request, *args, **kwargs):
         evento = get_object_or_404(Evento, id=request.GET.get("id"))
         evento_data = EventoSerializer(evento, many=False).data
@@ -43,10 +47,11 @@ class EventoView(generics.CreateAPIView):
             
         return Response(evento_data, 200)
 
+    #Crear Evento (SOLO ADMIN)
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         if not es_admin(request.user):
-            return Response({"details": "Acción denegada. Solo administradores pueden crear."}, status=403)
+            return Response({"details": "Acción denegada. Solo administradores."}, status=403)
 
         data = request.data.copy()
         
@@ -61,25 +66,26 @@ class EventoView(generics.CreateAPIView):
             
         return Response(evento.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Editar evento
 class EventosViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
     
+    #Editar Evento (SOLO ADMIN)
     def put(self, request, *args, **kwargs):
         if not es_admin(request.user):
-            return Response({"details": "Acción denegada. Solo administradores pueden editar."}, status=403)
+            return Response({"details": "Acción denegada. Solo administradores."}, status=403)
 
         evento = get_object_or_404(Evento, id=request.data["id"])
         
         evento.nombre_evento = request.data["nombre_evento"]
         evento.descripcion = request.data["descripcion"]
+        evento.categoria = request.data["categoria"] 
         evento.organizador = request.data["organizador"]
         evento.lugar = request.data["lugar"]
         evento.modalidad = request.data["modalidad"]
-        evento.fecha_evento = request.data["fecha_evento"]
-        evento.hora_inicio = request.data["hora_inicio"]
-        evento.hora_fin = request.data["hora_fin"]
-        
+        evento.fecha_inicio = request.data["fecha_inicio"]
+        evento.fecha_fin = request.data["fecha_fin"]
         evento.cupo = request.data["cupo"]
         
         if "publico_json" in request.data:
@@ -97,9 +103,10 @@ class EventosViewEdit(generics.CreateAPIView):
         evento_data = EventoSerializer(evento, many=False).data
         return Response(evento_data, 200)
     
+    # Eliminar Evento (SOLO ADMIN)
     def delete(self, request, *args, **kwargs):
         if not es_admin(request.user):
-            return Response({"details": "Acción denegada. Solo administradores pueden eliminar."}, status=403)
+            return Response({"details": "Acción denegada. Solo administradores."}, status=403)
 
         evento = get_object_or_404(Evento, id=request.GET.get("id"))
         try:
@@ -107,3 +114,24 @@ class EventosViewEdit(generics.CreateAPIView):
             return Response({"details": "Evento eliminado"}, 200)
         except Exception as e:
             return Response({"details": "Algo pasó al eliminar"}, 400)
+        
+
+    def get(self, request, *args, **kwargs):
+        from sistema_gtea.models import Evento, Categoria
+
+        total_eventos = Evento.objects.count()
+
+        total_categorias = Categoria.objects.count()
+        
+        categoria_top = Evento.objects.values('categoria') \
+                             .annotate(total=Count('id')) \
+                             .order_by('-total') \
+                             .first()
+
+        return Response({
+            'Total eventos': total_eventos,
+            'Total categorias': total_categorias,
+            'Categoria mas usada': {
+                'Nombre': categoria_top,
+            }
+        }, 200)

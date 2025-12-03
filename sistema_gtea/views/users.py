@@ -3,7 +3,7 @@ from django.db import transaction
 from django.db.models import *
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-#from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
 from sistema_gtea.serializers import *
@@ -20,14 +20,16 @@ class AdminAll(generics.CreateAPIView):
 
 # 2. VER UN ADMIN Y REGISTRAR NUEVO
 class AdminView(generics.CreateAPIView):
-    # permission_classes = (permissions.IsAuthenticated,) 
+    permission_classes = (permissions.IsAuthenticated,)
 
+    # Obtener un admin por ID
     def get(self, request, *args, **kwargs):
         admin_id = request.GET.get("id")
         admin = get_object_or_404(Administradores, id=admin_id)
         serializer = AdminSerializer(admin, many=False).data
         return Response(serializer, 200)
     
+    # Registrar nuevo admin
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         
@@ -41,7 +43,6 @@ class AdminView(generics.CreateAPIView):
         if password != confirm_password:
              return Response({"message": "Las contraseñas no coinciden"}, status=status.HTTP_400_BAD_REQUEST)
 
-        email = request.data.get('email')
         existing_user = User.objects.filter(email=email).first()
 
         if existing_user:
@@ -85,20 +86,21 @@ class AdminView(generics.CreateAPIView):
         except Exception as e:
             return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# 3. DASHBOARD (ESTADÍSTICAS), EDICIÓN Y ELIMINACIÓN
 class AdminsViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    #parser_classes = (MultiPartParser, FormParser)
-
+#dashboard
     def get(self, request, *args, **kwargs):
         total_admins = Administradores.objects.filter(user__is_active=1).count()
         total_organizadores = Organizador.objects.filter(user__is_active=1).count()
         total_estudiantes = Estudiantes.objects.filter(user__is_active=1).count()
 
+        total_usuarios = total_admins + total_organizadores + total_estudiantes
+
         return Response({
-            'admins': total_admins, 
+            'Administradores': total_admins, 
             'Organizador': total_organizadores, 
-            'Estudiantes': total_estudiantes 
+            'Estudiantes': total_estudiantes,
+            'Total usuarios': total_usuarios
         }, 200)
     
     # Editar Administrador
@@ -108,12 +110,9 @@ class AdminsViewEdit(generics.CreateAPIView):
         
         admin.telefono = request.data["telefono"]
         admin.biografia = request.data["biografia"]
-        
-        #if 'imagen' in request.FILES:
-            #admin.imagen = request.FILES['imagen']
-            
         admin.first_name = request.data["first_name"]
         admin.last_name = request.data["last_name"]
+            
         admin.save()
 
         user_obj = admin.user
