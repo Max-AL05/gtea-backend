@@ -14,8 +14,8 @@ def es_admin(user):
 
 class EventosAll(generics.CreateAPIView):
     # Todos los usuarios logueados pueden ver la lista
-    permission_classes = (permissions.IsAuthenticated,)
-
+    permission_classes = (permissions.AllowAny,)
+    
     def get(self, request, *args, **kwargs):
         eventos = Evento.objects.all().order_by("id")
         eventos_data = EventoSerializer(eventos, many=True).data
