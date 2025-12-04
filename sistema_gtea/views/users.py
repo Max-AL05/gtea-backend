@@ -3,7 +3,6 @@ from django.db import transaction
 from django.db.models import *
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
 from sistema_gtea.serializers import *
@@ -73,8 +72,8 @@ class AdminView(generics.CreateAPIView):
                 last_name=last_name,
                 email=email,
                 password = user.password,
-                telefono = request.data.get("telefono", ""),
-                biografia = request.data.get("biografia", "")
+                telefono = request.data.get("telefono",),
+                biografia = request.data.get("biografia",)
             )
             admin.save()
 
@@ -98,7 +97,7 @@ class AdminsViewEdit(generics.CreateAPIView):
 
         return Response({
             'Administradores': total_admins, 
-            'Organizador': total_organizadores, 
+            'Organizadores': total_organizadores, 
             'Estudiantes': total_estudiantes,
             'Total usuarios': total_usuarios
         }, 200)
