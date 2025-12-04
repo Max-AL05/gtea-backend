@@ -4,20 +4,30 @@ from django.db.models import Count
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser 
-from sistema_gtea.models import Evento
+from sistema_gtea.models import Evento, Categoria, Organizador
 from sistema_gtea.serializers import EventoSerializer
 import json
 
-# Función auxiliar para validar si es Admin
 def es_admin(user):
     return user.groups.filter(name__in=['Administrador', 'Admin', 'administrador']).exists()
 
-class EventosAll(generics.CreateAPIView):
-    # Todos los usuarios logueados pueden ver la lista
-    permission_classes = (permissions.AllowAny,)
+def es_organizador(user):
+    return user.is_authenticated and user.groups.filter(name__in=['Organizador', 'organizador']).exists()
 
+class EventosAll(generics.CreateAPIView):
+    permission_classes = (permissions.AllowAny,)
+    
     def get(self, request, *args, **kwargs):
-        eventos = Evento.objects.all().order_by("id")
+        if es_organizador(request.user):
+            try:
+                perfil_org = Organizador.objects.get(user=request.user)
+                eventos = Evento.objects.filter(organizador=perfil_org).order_by("id")
+            except Organizador.DoesNotExist:
+                return Response({"details": "No se encontró tu perfil de organizador."}, 400)
+        else:
+            eventos = Evento.objects.all().order_by("id")
+
+        # Serialización
         eventos_data = EventoSerializer(eventos, many=True).data
         
         if not eventos_data:
@@ -33,8 +43,10 @@ class EventosAll(generics.CreateAPIView):
 
 class EventoView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
+        # self.permission_classes = [permissions.AllowAny]
         evento = get_object_or_404(Evento, id=request.GET.get("id"))
         evento_data = EventoSerializer(evento, many=False).data
         
@@ -47,8 +59,8 @@ class EventoView(generics.CreateAPIView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        if not es_admin(request.user):
-            return Response({"details": "Acción denegada. Solo administradores."}, status=403)
+        if not (es_admin(request.user) or es_organizador(request.user)):
+            return Response({"details": "Acción denegada. No tienes permisos para crear eventos."}, status=403)
 
         data = request.data.copy()
         
@@ -56,12 +68,20 @@ class EventoView(generics.CreateAPIView):
             if not isinstance(data["publico_json"], str):
                 data["publico_json"] = json.dumps(data["publico_json"])
 
+        if es_organizador(request.user):
+            try:
+                perfil = Organizador.objects.get(user=request.user)
+                data["organizador"] = perfil.id
+            except Organizador.DoesNotExist:
+                return Response({"details": "No se encontró tu perfil de organizador."}, status=400)
+
         evento = EventoSerializer(data=data)
         if evento.is_valid():
             evento_guardado = evento.save()
             return Response({"evento_created_id": evento_guardado.id}, 201)
             
         return Response(evento.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class EventosViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -76,11 +96,15 @@ class EventosViewEdit(generics.CreateAPIView):
         evento.nombre_evento = request.data["nombre_evento"]
         evento.descripcion = request.data["descripcion"]
         evento.categoria = request.data["categoria"] 
-        evento.organizador = request.data["organizador"]
+        evento.organizador = request.data["organizador"] 
         evento.lugar = request.data["lugar"]
         evento.modalidad = request.data["modalidad"]
-        evento.fecha_inicio = request.data["fecha_inicio"]
+        evento.fecha_inicio = request.data["fecha_inicio"] 
         evento.fecha_fin = request.data["fecha_fin"]
+        evento.fecha_evento = request.data.get("fecha_evento", evento.fecha_evento)
+        evento.hora_inicio = request.data.get("hora_inicio", evento.hora_inicio)
+        evento.hora_fin = request.data.get("hora_fin", evento.hora_fin)
+
         evento.cupo = request.data["cupo"]
         
         if "publico_json" in request.data:
@@ -114,13 +138,15 @@ class EventosViewEdit(generics.CreateAPIView):
         from sistema_gtea.models import Evento, Categoria
 
         total_eventos = Evento.objects.count()
-
         total_categorias = Categoria.objects.count()
         
         categoria_top = Evento.objects.values('categoria') \
                              .annotate(total=Count('id')) \
                              .order_by('-total') \
                              .first()
+
+        # CORRECCIÓN AQUÍ: Inicializar la variable antes del if
+        nombre_mas_usada = "Sin datos"
 
         if categoria_top:
             nombre_mas_usada = categoria_top['categoria']

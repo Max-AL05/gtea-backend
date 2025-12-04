@@ -3,7 +3,6 @@ from django.db import transaction
 from django.db.models import *
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-#from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group, User
 from sistema_gtea.models import *
 from sistema_gtea.serializers import *
@@ -99,7 +98,7 @@ class OrganizadorViewEdit(generics.CreateAPIView):
             'admins': total_admins, 
             'Organizador': total_organizadores, 
             'Estudiantes': total_estudiantes,
-            'total_usuarios': total_usuarios  # <--- Nuevo campo
+            'total_usuarios': total_usuarios
         }, 200)
     
     # Editar Organizador

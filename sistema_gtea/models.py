@@ -75,13 +75,14 @@ class Evento(models.Model):
     nombre_evento = models.CharField(max_length=255)
     descripcion = models.TextField()
     categoria = models.CharField(max_length=255, null=True, blank=True)
-    organizador = models.CharField(max_length=255, null=True, blank=True)
+    organizador = models.ForeignKey(Organizador, on_delete=models.SET_NULL, null=True, blank=True, related_name='mis_eventos')    
     lugar = models.CharField(max_length=255)
     modalidad = models.CharField(max_length=255, null=True, blank=True)
     fecha_evento = models.DateField(null=True, blank=True)
     hora_inicio = models.TimeField(null=True, blank=True)   
     hora_fin = models.TimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
+    
 
     publico_json = models.TextField(null=True, blank=True, default="[]")
     creation = models.DateTimeField(auto_now_add=True)
@@ -105,33 +106,22 @@ class Sede(models.Model):
 
 class Inscripcion(models.Model):
     id = models.BigAutoField(primary_key=True)
-    
-    # Relaciones
     estudiante = models.ForeignKey(Estudiantes, on_delete=models.CASCADE, related_name='inscripciones')
     evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name='inscritos')
-    
-    # Fecha automática
     fecha_inscripcion = models.DateTimeField(auto_now_add=True)
-    
-    # Estados de la inscripción
     ESTADOS = [
         ('inscrito', 'Inscrito'),
         ('cancelado_usuario', 'Cancelado por Usuario'),
         ('cancelado_organizador', 'Cancelado por Organizador'),
     ]
     estado = models.CharField(max_length=50, choices=ESTADOS, default='inscrito')
-    
-    # Motivo (opcional, por si se cancela)
     motivo_cancelacion = models.TextField(null=True, blank=True)
-    
-    # Asistencia (Gestionada por Admin/Organizador)
     ASISTENCIA = [
         ('pendiente', 'Pendiente'),
         ('asistio', 'Asistió'),
         ('no_asistio', 'No Asistió'),
     ]
     asistencia = models.CharField(max_length=20, choices=ASISTENCIA, default='pendiente')
-
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
 
