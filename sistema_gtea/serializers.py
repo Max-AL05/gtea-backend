@@ -27,8 +27,6 @@ class Estudianteserializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class OrganizadorSerializer(serializers.ModelSerializer):
-    # El UserSerializer ya debe tener first_name y last_name
-    user = UserSerializer(read_only=True) 
     class Meta:
         model = Organizador
         fields = '__all__'
@@ -39,11 +37,9 @@ class CategoriaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class EventoSerializer(serializers.ModelSerializer):
-    organizador_nombre = serializers.CharField(source='organizador.nombre', read_only=True)
-
-    class Meta:
-        model = Evento
-        fields = '__all__'
+        class Meta:
+            model = Evento
+            fields = '__all__'
 
 class SedeSerializer(serializers.ModelSerializer):
     class Meta:
