@@ -75,7 +75,9 @@ class Evento(models.Model):
     nombre_evento = models.CharField(max_length=255)
     descripcion = models.TextField()
     categoria = models.CharField(max_length=255, null=True, blank=True)
-    organizador = models.ForeignKey(Organizador, on_delete=models.SET_NULL, null=True, blank=True, related_name='mis_eventos')    
+
+
+    organizador = models.CharField(max_length=255, null=True, blank=True)    
     lugar = models.CharField(max_length=255)
     modalidad = models.CharField(max_length=255, null=True, blank=True)
     fecha_evento = models.DateField(null=True, blank=True)

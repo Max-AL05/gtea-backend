@@ -19,7 +19,7 @@ class AdminAll(generics.CreateAPIView):
 
 # 2. VER UN ADMIN Y REGISTRAR NUEVO
 class AdminView(generics.CreateAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.AllowAny,)
 
     # Obtener un admin por ID
     def get(self, request, *args, **kwargs):

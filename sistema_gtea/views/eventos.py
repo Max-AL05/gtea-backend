@@ -14,32 +14,34 @@ def es_admin(user):
 def es_organizador(user):
     return user.is_authenticated and user.groups.filter(name__in=['Organizador', 'organizador']).exists()
 
-class EventosAll(generics.CreateAPIView):
+cclass EventosAll(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
-    
+
     def get(self, request, *args, **kwargs):
         if es_organizador(request.user):
             try:
                 perfil_org = Organizador.objects.get(user=request.user)
-                eventos = Evento.objects.filter(organizador=perfil_org).order_by("id")
+                # AQUÍ ESTÁ LA MEJORA: Usar select_related
+                eventos = Evento.objects.filter(organizador=perfil_org).select_related('organizador').order_by("id")
             except Organizador.DoesNotExist:
                 return Response({"details": "No se encontró tu perfil de organizador."}, 400)
         else:
-            eventos = Evento.objects.all().order_by("id")
+            # AQUÍ TAMBIÉN
+            eventos = Evento.objects.select_related('organizador').all().order_by("id")
 
         # Serialización
         eventos_data = EventoSerializer(eventos, many=True).data
-        
+
         if not eventos_data:
             return Response([], 200)
-            
+
         for evento in eventos_data:
             try:
                 evento["publico_json"] = json.loads(evento["publico_json"])
             except (TypeError, json.JSONDecodeError):
                 evento["publico_json"] = []
-                
-        return Response(eventos_data, 200)
+
+        return Response(eventos_data, 200))
 
 class EventoView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
