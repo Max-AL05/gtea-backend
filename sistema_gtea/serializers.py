@@ -46,3 +46,8 @@ class SedeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sede
         fields = '__all__'
+
+class InscripcionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inscripcion
+        fields = '__all__'

@@ -98,7 +98,7 @@ class SedesViewEdit(generics.CreateAPIView):
         except Exception as e:
             return Response({"details": "Algo pasó al eliminar"}, 400)
 
-
+#dashboard
     def get(self, request, *args, **kwargs):
         total_sedes = Sede.objects.count()
 

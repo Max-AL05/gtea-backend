@@ -7,6 +7,7 @@ from sistema_gtea.views import organizadores
 from sistema_gtea.views import sedes
 from sistema_gtea.views import users
 from sistema_gtea.views import auth
+from sistema_gtea.views import inscripciones
 
 urlpatterns = [
     #Version
@@ -40,6 +41,11 @@ urlpatterns = [
     path('sedes/', sedes.SedeView.as_view()),
     path('lista-sedes/', sedes.SedesAll.as_view()),
     path('sedes-edit/', sedes.SedesViewEdit.as_view()),    
+
+    #inscripciones
+    path('inscripciones/', inscripciones.InscripcionView.as_view()),
+    path('lista-inscripciones/', inscripciones.InscripcionesAll.as_view()),
+    path('inscripciones-edit/', inscripciones.InscripcionViewEdit.as_view()),
 
     #Login
         path('token/', auth.CustomAuthToken.as_view()),

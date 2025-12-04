@@ -103,3 +103,37 @@ class Sede(models.Model):
     def __str__(self):
         return f"{self.edificio} - {self.aula}"
 
+class Inscripcion(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    
+    # Relaciones
+    estudiante = models.ForeignKey(Estudiantes, on_delete=models.CASCADE, related_name='inscripciones')
+    evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name='inscritos')
+    
+    # Fecha automática
+    fecha_inscripcion = models.DateTimeField(auto_now_add=True)
+    
+    # Estados de la inscripción
+    ESTADOS = [
+        ('inscrito', 'Inscrito'),
+        ('cancelado_usuario', 'Cancelado por Usuario'),
+        ('cancelado_organizador', 'Cancelado por Organizador'),
+    ]
+    estado = models.CharField(max_length=50, choices=ESTADOS, default='inscrito')
+    
+    # Motivo (opcional, por si se cancela)
+    motivo_cancelacion = models.TextField(null=True, blank=True)
+    
+    # Asistencia (Gestionada por Admin/Organizador)
+    ASISTENCIA = [
+        ('pendiente', 'Pendiente'),
+        ('asistio', 'Asistió'),
+        ('no_asistio', 'No Asistió'),
+    ]
+    asistencia = models.CharField(max_length=20, choices=ASISTENCIA, default='pendiente')
+
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.estudiante} - {self.evento.nombre_evento}"
