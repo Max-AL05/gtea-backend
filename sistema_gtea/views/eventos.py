@@ -8,52 +8,75 @@ from sistema_gtea.models import Evento, Categoria, Organizador
 from sistema_gtea.serializers import EventoSerializer
 import json
 
+# Funciones auxiliares de permisos
 def es_admin(user):
     return user.groups.filter(name__in=['Administrador', 'Admin', 'administrador']).exists()
 
 def es_organizador(user):
     return user.is_authenticated and user.groups.filter(name__in=['Organizador', 'organizador']).exists()
 
-class EventosAll(generics.CreateAPIView):
+# -------------------------------------------------------------------------
+# VISTA PARA LISTAR EVENTOS (PÚBLICO Y FILTRADO)
+# -------------------------------------------------------------------------
+class EventosAll(generics.ListAPIView):
+    # Permitimos que cualquiera (incluso no logueados) vea la lista
     permission_classes = (permissions.AllowAny,)
+    serializer_class = EventoSerializer
 
     def get(self, request, *args, **kwargs):
-        if es_organizador(request.user):
+        # 1. Por defecto, traemos TODOS los eventos (Objetivo: cualquier persona puede ver todo)
+        eventos = Evento.objects.select_related('organizador').all().order_by("id")
+
+        # 2. Lógica de filtro opcional:
+        # Si el usuario es organizador Y envía el parámetro 'mis_eventos=true' en la URL
+        ver_mis_eventos = request.query_params.get('mis_eventos') == 'true'
+
+        if es_organizador(request.user) and ver_mis_eventos:
             try:
                 perfil_org = Organizador.objects.get(user=request.user)
-                # AQUÍ ESTÁ LA MEJORA: Usar select_related
-                eventos = Evento.objects.filter(organizador=perfil_org).select_related('organizador').order_by("id")
+                eventos = eventos.filter(organizador=perfil_org)
             except Organizador.DoesNotExist:
-                return Response({"details": "No se encontró tu perfil de organizador."}, 400)
-        else:
-            # AQUÍ TAMBIÉN
-            eventos = Evento.objects.select_related('organizador').all().order_by("id")
+                return Response({"details": "No se encontró tu perfil de organizador."}, status=400)
 
-        # Serialización
+        # 3. Serialización
         eventos_data = EventoSerializer(eventos, many=True).data
 
         if not eventos_data:
             return Response([], 200)
 
+        # Procesar el campo JSON manual (según tu modelo)
         for evento in eventos_data:
             try:
-                evento["publico_json"] = json.loads(evento["publico_json"])
+                if evento["publico_json"]:
+                    evento["publico_json"] = json.loads(evento["publico_json"])
+                else:
+                    evento["publico_json"] = []
             except (TypeError, json.JSONDecodeError):
                 evento["publico_json"] = []
 
         return Response(eventos_data, 200)
 
+# -------------------------------------------------------------------------
+# VISTA PARA CREAR Y VER UN EVENTO INDIVIDUAL
+# -------------------------------------------------------------------------
 class EventoView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
-        # self.permission_classes = [permissions.AllowAny]
-        evento = get_object_or_404(Evento, id=request.GET.get("id"))
+        # Obtener un evento específico por ID
+        evento_id = request.GET.get("id")
+        if not evento_id:
+            return Response({"details": "Falta el parámetro id"}, status=400)
+            
+        evento = get_object_or_404(Evento, id=evento_id)
         evento_data = EventoSerializer(evento, many=False).data
         
         try:
-            evento_data["publico_json"] = json.loads(evento_data["publico_json"])
+            if evento_data["publico_json"]:
+                evento_data["publico_json"] = json.loads(evento_data["publico_json"])
+            else:
+                evento_data["publico_json"] = []
         except (TypeError, json.JSONDecodeError):
             evento_data["publico_json"] = []
             
@@ -61,21 +84,25 @@ class EventoView(generics.CreateAPIView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
+        # Solo admins u organizadores pueden crear
         if not (es_admin(request.user) or es_organizador(request.user)):
             return Response({"details": "Acción denegada. No tienes permisos para crear eventos."}, status=403)
 
         data = request.data.copy()
         
+        # Manejo del JSON manual
         if "publico_json" in data:
             if not isinstance(data["publico_json"], str):
                 data["publico_json"] = json.dumps(data["publico_json"])
 
+        # Asignación automática del Organizador
         if es_organizador(request.user):
             try:
                 perfil = Organizador.objects.get(user=request.user)
+                # Forzamos que el evento pertenezca al usuario logueado
                 data["organizador"] = perfil.id
             except Organizador.DoesNotExist:
-                return Response({"details": "No se encontró tu perfil de organizador."}, status=400)
+                return Response({"details": "No tienes un perfil de organizador asociado."}, status=400)
 
         evento = EventoSerializer(data=data)
         if evento.is_valid():
@@ -84,30 +111,32 @@ class EventoView(generics.CreateAPIView):
             
         return Response(evento.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+# -------------------------------------------------------------------------
+# VISTA PARA EDITAR Y BORRAR (SOLO ADMINS SEGÚN TU LÓGICA ACTUAL)
+# -------------------------------------------------------------------------
 class EventosViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
     
     def put(self, request, *args, **kwargs):
+        # Nota: Aquí tal vez quieras permitir que el organizador edite SU propio evento.
+        # Por ahora lo dejé solo para Admin como estaba en tu archivo original.
         if not es_admin(request.user):
             return Response({"details": "Acción denegada. Solo administradores."}, status=403)
 
         evento = get_object_or_404(Evento, id=request.data["id"])
         
-        evento.nombre_evento = request.data["nombre_evento"]
-        evento.descripcion = request.data["descripcion"]
-        evento.categoria = request.data["categoria"] 
-        evento.organizador = request.data["organizador"] 
-        evento.lugar = request.data["lugar"]
-        evento.modalidad = request.data["modalidad"]
-        evento.fecha_inicio = request.data["fecha_inicio"] 
-        evento.fecha_fin = request.data["fecha_fin"]
+        # Actualización de campos
+        evento.nombre_evento = request.data.get("nombre_evento", evento.nombre_evento)
+        evento.descripcion = request.data.get("descripcion", evento.descripcion)
+        evento.categoria = request.data.get("categoria", evento.categoria)
+        # evento.organizador = ... (Generalmente no se cambia el organizador al editar)
+        evento.lugar = request.data.get("lugar", evento.lugar)
+        evento.modalidad = request.data.get("modalidad", evento.modalidad)
         evento.fecha_evento = request.data.get("fecha_evento", evento.fecha_evento)
         evento.hora_inicio = request.data.get("hora_inicio", evento.hora_inicio)
         evento.hora_fin = request.data.get("hora_fin", evento.hora_fin)
-
-        evento.cupo = request.data["cupo"]
+        evento.cupo = request.data.get("cupo", evento.cupo)
         
         if "publico_json" in request.data:
              publico = request.data["publico_json"]
@@ -137,8 +166,7 @@ class EventosViewEdit(generics.CreateAPIView):
         
 
     def get(self, request, *args, **kwargs):
-        from sistema_gtea.models import Evento, Categoria
-
+        # Estadísticas
         total_eventos = Evento.objects.count()
         total_categorias = Categoria.objects.count()
         
@@ -147,9 +175,7 @@ class EventosViewEdit(generics.CreateAPIView):
                              .order_by('-total') \
                              .first()
 
-        # CORRECCIÓN AQUÍ: Inicializar la variable antes del if
         nombre_mas_usada = "Sin datos"
-
         if categoria_top:
             nombre_mas_usada = categoria_top['categoria']
 

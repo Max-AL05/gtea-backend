@@ -40,7 +40,6 @@ class EventoSerializer(serializers.ModelSerializer):
         class Meta:
             model = Evento
             fields = '__all__'
-
 class SedeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sede

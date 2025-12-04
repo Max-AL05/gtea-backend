@@ -75,7 +75,13 @@ class Evento(models.Model):
     nombre_evento = models.CharField(max_length=255)
     descripcion = models.TextField()
     categoria = models.CharField(max_length=255, null=True, blank=True)
+    
+    # Relación original (Mantiene el ID)
     organizador = models.ForeignKey(Organizador, on_delete=models.CASCADE, null=True, blank=True, related_name='eventos')    
+    
+    # NUEVO CAMPO: Guardará el nombre en texto plano
+    nombre_organizador = models.CharField(max_length=255, null=True, blank=True)
+
     lugar = models.CharField(max_length=255)
     modalidad = models.CharField(max_length=255, null=True, blank=True)
     fecha_evento = models.DateField(null=True, blank=True)
@@ -83,10 +89,17 @@ class Evento(models.Model):
     hora_fin = models.TimeField(null=True, blank=True)
     cupo = models.PositiveIntegerField(null=True, blank=True)
     
-
     publico_json = models.TextField(null=True, blank=True, default="[]")
     creation = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
+
+    # LÓGICA AUTOMÁTICA: Antes de guardar, rellenamos el nombre
+    def save(self, *args, **kwargs):
+        if self.organizador:
+            nombre = self.organizador.first_name or ""
+            apellido = self.organizador.last_name or ""
+            self.nombre_organizador = f"{nombre} {apellido}".strip()
+        super(Evento, self).save(*args, **kwargs)
 
     def __str__(self):
         return "El nombre del evento es "+self.nombre_evento
