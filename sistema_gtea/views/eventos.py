@@ -14,7 +14,7 @@ def es_admin(user):
 def es_organizador(user):
     return user.is_authenticated and user.groups.filter(name__in=['Organizador', 'organizador']).exists()
 
-cclass EventosAll(generics.CreateAPIView):
+class EventosAll(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request, *args, **kwargs):
@@ -41,7 +41,7 @@ cclass EventosAll(generics.CreateAPIView):
             except (TypeError, json.JSONDecodeError):
                 evento["publico_json"] = []
 
-        return Response(eventos_data, 200))
+        return Response(eventos_data, 200)
 
 class EventoView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)

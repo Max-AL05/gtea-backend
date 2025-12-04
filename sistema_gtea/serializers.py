@@ -39,9 +39,11 @@ class CategoriaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class EventoSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Evento
-            fields = '__all__'
+    organizador_nombre = serializers.CharField(source='organizador.nombre', read_only=True)
+
+    class Meta:
+        model = Evento
+        fields = '__all__'
 
 class SedeSerializer(serializers.ModelSerializer):
     class Meta:
