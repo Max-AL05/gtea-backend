@@ -2,8 +2,10 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from sistema_gtea.models import Inscripcion, Evento, Estudiantes
+from sistema_gtea.models import Inscripcion, Evento, Estudiantes, Sede
+from django.db.models import Sum, Count
 from sistema_gtea.serializers import InscripcionSerializer
+from django.contrib.auth.models import Group, User
 
 def es_admin_o_organizador(user):
     return user.is_authenticated and user.groups.filter(name__in=['Administrador', 'Organizador']).exists()
@@ -98,3 +100,31 @@ class InscripcionViewEdit(generics.CreateAPIView):
             return Response(InscripcionSerializer(inscripcion).data, 200)
 
         return Response({"details": "Permisos insuficientes"}, 403)
+
+    def get(self, request, *args, **kwargs):
+        # 1. Total de Eventos
+        total_eventos = Evento.objects.count()
+
+        # 2. Usuarios Activos (Admin + Org + Estudiantes activos)
+        # Usamos el modelo User de Django que controla el acceso
+        total_usuarios_activos = User.objects.filter(is_active=True).count()
+
+        # 3. Total de Inscripciones
+        total_inscripciones = Inscripcion.objects.count()
+
+        # 4. Tasa de Asistencia (%)
+        # Fórmula: (Personas que asistieron / Total de inscritos) * 100
+        # Solo contamos 'asistio', ignoramos 'pendiente' o 'no_asistio' para el numerador
+        total_asistieron = Inscripcion.objects.filter(asistencia='asistio').count()
+        
+        tasa_asistencia = 0
+        if total_inscripciones > 0:
+            tasa_asistencia = (total_asistieron / total_inscripciones) * 100
+            tasa_asistencia = round(tasa_asistencia, 2) # Redondear a 2 decimales
+
+        return Response({
+            'total_eventos': total_eventos,
+            'usuarios_activos': total_usuarios_activos,
+            'total_inscripciones': total_inscripciones,
+            'tasa_asistencia_porcentaje': tasa_asistencia
+        }, 200)

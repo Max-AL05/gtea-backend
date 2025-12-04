@@ -15,7 +15,7 @@ def es_admin(user):
 class EventosAll(generics.CreateAPIView):
     # Todos los usuarios logueados pueden ver la lista
     permission_classes = (permissions.AllowAny,)
-    
+
     def get(self, request, *args, **kwargs):
         eventos = Evento.objects.all().order_by("id")
         eventos_data = EventoSerializer(eventos, many=True).data
@@ -33,9 +33,7 @@ class EventosAll(generics.CreateAPIView):
 
 class EventoView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    parser_classes = (MultiPartParser, FormParser)
 
-    #Ver detalle (Público para usuarios logueados)
     def get(self, request, *args, **kwargs):
         evento = get_object_or_404(Evento, id=request.GET.get("id"))
         evento_data = EventoSerializer(evento, many=False).data
@@ -47,7 +45,6 @@ class EventoView(generics.CreateAPIView):
             
         return Response(evento_data, 200)
 
-    #Crear Evento (SOLO ADMIN)
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         if not es_admin(request.user):
@@ -66,12 +63,10 @@ class EventoView(generics.CreateAPIView):
             
         return Response(evento.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Editar evento
 class EventosViewEdit(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
     
-    #Editar Evento (SOLO ADMIN)
     def put(self, request, *args, **kwargs):
         if not es_admin(request.user):
             return Response({"details": "Acción denegada. Solo administradores."}, status=403)
@@ -103,7 +98,6 @@ class EventosViewEdit(generics.CreateAPIView):
         evento_data = EventoSerializer(evento, many=False).data
         return Response(evento_data, 200)
     
-    # Eliminar Evento (SOLO ADMIN)
     def delete(self, request, *args, **kwargs):
         if not es_admin(request.user):
             return Response({"details": "Acción denegada. Solo administradores."}, status=403)
@@ -128,10 +122,11 @@ class EventosViewEdit(generics.CreateAPIView):
                              .order_by('-total') \
                              .first()
 
+        if categoria_top:
+            nombre_mas_usada = categoria_top['categoria']
+
         return Response({
             'Total eventos': total_eventos,
             'Total categorias': total_categorias,
-            'Categoria mas usada': {
-                'Nombre': categoria_top,
-            }
+            'Categoria mas usada': nombre_mas_usada
         }, 200)
