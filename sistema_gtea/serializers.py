@@ -42,6 +42,20 @@ class EventoSerializer(serializers.ModelSerializer):
         model = Evento
         fields = '__all__'
 
+    # ESTA FUNCIÓN ES LA SOLUCIÓN:
+    # Se ejecuta justo antes de enviar la respuesta al usuario (GET)
+    # Sobrescribe el campo 'organizador' para mostrar el nombre en vez del ID.
+    def to_representation(self, instance):
+        # 1. Obtiene la representación original (donde 'organizador' es un ID)
+        response = super().to_representation(instance)
+        
+        # 2. Busca los datos del usuario real y reemplaza el ID por el Nombre
+        if instance.organizador and instance.organizador.user:
+            full_name = f"{instance.organizador.user.first_name} {instance.organizador.user.last_name}"
+            response['organizador'] = full_name  # ¡Aquí ocurre el cambio visual!
+        
+        return response
+
 class SedeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sede
